@@ -1,40 +1,49 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 )
 
-// scanCmd represents the scan command
+var (
+	flagAll     bool
+	flagCIS     bool
+	flagPE      bool
+	jsonOut     string
+	htmlOut     string
+	flagTimeout time.Duration
+)
+
 var scanCmd = &cobra.Command{
 	Use:   "scan",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("scan called")
+	Short: "Run RedCheck scans",
+	Long:  "Run CIS Rocky v10 checks and/or attacker-centric recon checks and produce JSON/HTML reports.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// default to --all if none specified
+		if !flagAll && !flagCIS && !flagPE {
+			flagAll = true
+		}
+		fmt.Printf("Starting scan… (all=%v, cis=%v, pe=%v, timeout=%s)\n", flagAll, flagCIS, flagPE, flagTimeout)
+		if jsonOut != "" {
+			fmt.Println("Will write JSON to:", jsonOut)
+		}
+		if htmlOut != "" {
+			fmt.Println("Will write HTML to:", htmlOut)
+		}
+		// TODO: call pkg/host, pkg/checks, pkg/scoring, pkg/report
+		fmt.Println("Scan complete (stub).")
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(scanCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// scanCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// scanCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	scanCmd.Flags().BoolVar(&flagAll, "all", false, "Run all checks (default if none specified)")
+	scanCmd.Flags().BoolVar(&flagCIS, "cis", false, "Run CIS benchmark checks only")
+	scanCmd.Flags().BoolVar(&flagPE, "pe", false, "Run recon/priv-esc checks only")
+	scanCmd.Flags().StringVar(&jsonOut, "json", "", "Write results to JSON file")
+	scanCmd.Flags().StringVar(&htmlOut, "html", "", "Write report to HTML file")
+	scanCmd.Flags().DurationVar(&flagTimeout, "timeout", 60*time.Second, "Per-check timeout (e.g., 60s, 2m)")
 }
