@@ -40,6 +40,65 @@ func SSHPermitRootLogin() (string, error) {
 	}
 	return val, nil
 }
+func SSHX11Forwarding() (string, error) {
+	val := "default"
+	for _, p := range sshdPaths() {
+		b, err := os.ReadFile(p)
+		if err != nil {
+			continue
+		}
+		sc := bufio.NewScanner(bytes.NewReader(b))
+		for sc.Scan() {
+			line := strings.TrimSpace(sc.Text())
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			f := strings.Fields(line)
+			if len(f) >= 2 && strings.EqualFold(f[0], "X11Forwarding") {
+				val = strings.ToLower(f[1])
+			}
+		}
+	}
+	return val, nil
+}
+
+func SSHBannerPresent() (string, error) {
+	found := false
+	for _, p := range sshdPaths() {
+		b, err := os.ReadFile(p)
+		if err != nil {
+			continue
+		}
+		sc := bufio.NewScanner(bytes.NewReader(b))
+		for sc.Scan() {
+			line := strings.TrimSpace(sc.Text())
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			f := strings.Fields(line)
+			if len(f) >= 2 && strings.EqualFold(f[0], "Banner") {
+				found = true
+			}
+		}
+	}
+	if found {
+		return "present", nil
+	}
+	return "absent", nil
+}
+
+func sshdPaths() []string {
+	paths := []string{"/etc/ssh/sshd_config"}
+	dir := "/etc/ssh/sshd_config.d"
+	if ents, err := os.ReadDir(dir); err == nil {
+		for _, e := range ents {
+			if !e.IsDir() && strings.HasSuffix(e.Name(), ".conf") {
+				paths = append(paths, filepath.Join(dir, e.Name()))
+			}
+		}
+	}
+	return paths
+}
 
 // tiny helper for includes (future):
 func resolveIncludes(dir, pattern string) ([]string, error) {

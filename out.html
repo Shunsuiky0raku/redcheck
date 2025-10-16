@@ -17,34 +17,34 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
 </style>
 
 <h1>RedCheck Report</h1>
-<div class="small">Host: KompanyArch &middot; Time: 2025-10-16T09:36:29Z</div>
+<div class="small">Host: KompanyArch &middot; Time: 2025-10-16T10:14:05Z</div>
 
 <div class="card">
   <h2>Score</h2>
-  <div>Global: <b>38.3</b></div>
-  
-    <div style="margin-top:8px">Audit — 100.0
-      <div class="bar"><div class="fill" style="width:100%"></div></div>
-    </div>
+  <div>Global: <b>50.2</b></div>
   
     <div style="margin-top:8px">Recon — 100.0
       <div class="bar"><div class="fill" style="width:100%"></div></div>
     </div>
   
-    <div style="margin-top:8px">Privileges — 77.8
-      <div class="bar"><div class="fill" style="width:78%"></div></div>
+    <div style="margin-top:8px">Privileges — 85.7
+      <div class="bar"><div class="fill" style="width:86%"></div></div>
     </div>
   
-    <div style="margin-top:8px">Services — 0.0
-      <div class="bar"><div class="fill" style="width:0%"></div></div>
+    <div style="margin-top:8px">Services — 28.6
+      <div class="bar"><div class="fill" style="width:29%"></div></div>
     </div>
   
-    <div style="margin-top:8px">Auth — 0.0
-      <div class="bar"><div class="fill" style="width:0%"></div></div>
+    <div style="margin-top:8px">Auth — 18.8
+      <div class="bar"><div class="fill" style="width:19%"></div></div>
     </div>
   
     <div style="margin-top:8px">FS_Perms — 0.0
       <div class="bar"><div class="fill" style="width:0%"></div></div>
+    </div>
+  
+    <div style="margin-top:8px">Audit — 100.0
+      <div class="bar"><div class="fill" style="width:100%"></div></div>
     </div>
   
 </div>
@@ -188,6 +188,96 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
         <td><span class="badge pass">pass</span></td>
         <td class="small"><code>true</code> → <code>true</code></td>
         <td class="small">Ensure only root has UID 0.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.1.6</code></td>
+        <td>X11Forwarding disabled</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>default</code> → <code>no</code></td>
+        <td class="small">Set &#39;X11Forwarding no&#39; in /etc/ssh/sshd_config and reload sshd.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.1.14</code></td>
+        <td>SSH Banner configured</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>absent</code> → <code>present</code></td>
+        <td class="small">Set &#39;Banner /etc/issue.net&#39; (or similar) and reload sshd.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-3.3.3</code></td>
+        <td>IPv6 accept_ra disabled (all)</td>
+        <td>Services</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>1</code> → <code>0</code></td>
+        <td class="small">Set net.ipv6.conf.all.accept_ra=0 and persist.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-3.3.5</code></td>
+        <td>IPv6 accept_source_route disabled (all)</td>
+        <td>Services</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>0</code> → <code>0</code></td>
+        <td class="small">Set net.ipv6.conf.all.accept_source_route=0 and persist.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-3.2.1</code></td>
+        <td>TCP SYN cookies enabled</td>
+        <td>Services</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>1</code> → <code>1</code></td>
+        <td class="small">Set net.ipv4.tcp_syncookies=1 and persist.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.2.4</code></td>
+        <td>sudo timestamp_timeout is sane (&lt;=15)</td>
+        <td>Privileges</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>true</code> → <code>true</code></td>
+        <td class="small">Set &#39;Defaults timestamp_timeout=15&#39; (or lower).</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.2.5</code></td>
+        <td>No NOPASSWD wildcards in sudoers</td>
+        <td>Privileges</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>true</code> → <code>true</code></td>
+        <td class="small">Remove &#39;NOPASSWD&#39; with wildcard commands; require authentication.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.3.1</code></td>
+        <td>PAM pwquality present</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>false</code> → <code>true</code></td>
+        <td class="small">Ensure pam_pwquality.so is configured in system-auth/password-auth (via authselect).</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.3.2</code></td>
+        <td>PAM pwhistory present</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>false</code> → <code>true</code></td>
+        <td class="small">Ensure pam_pwhistory.so is configured in system-auth/password-auth (via authselect).</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.3.3</code></td>
+        <td>PAM faillock present</td>
+        <td>Auth</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>true</code> → <code>true</code></td>
+        <td class="small">Ensure pam_faillock.so is configured in system-auth/password-auth (via authselect).</td>
       </tr>
       
     </tbody>

@@ -57,6 +57,26 @@ func Evaluate(rule Rule) CheckResult {
 		val, err = SudoLogfile()
 	case "acct.uid0_unique":
 		val, err = UID0Unique()
+	case "ssh.x11_forwarding":
+		val, err = SSHX11Forwarding()
+	case "ssh.banner":
+		val, err = SSHBannerPresent()
+	case "sysctl.net.ipv6.conf.all.accept_ra":
+		val, err = SysctlValue("net.ipv6.conf.all.accept_ra")
+	case "sysctl.net.ipv6.conf.all.accept_source_route":
+		val, err = SysctlValue("net.ipv6.conf.all.accept_source_route")
+	case "sysctl.net.ipv4.tcp_syncookies":
+		val, err = SysctlValue("net.ipv4.tcp_syncookies")
+	case "sudo.timestamp_timeout_sane":
+		val, err = SudoTimestampTimeoutSane()
+	case "sudo.nopasswd_wildcard_forbidden":
+		val, err = SudoNoPasswdWildcardForbidden()
+	case "pam.pwquality_present":
+		val, err = PamPwqualityPresent()
+	case "pam.pwhistory_present":
+		val, err = PamPwhistoryPresent()
+	case "pam.faillock_present":
+		val, err = PamFaillockPresent()
 
 	default:
 		val = "unknown"

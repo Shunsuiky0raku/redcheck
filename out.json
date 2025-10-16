@@ -1,27 +1,11 @@
 {
   "host": {
     "hostname": "KompanyArch",
-    "time": "2025-10-16T09:36:29Z"
+    "time": "2025-10-16T10:14:05Z"
   },
   "scores": {
-    "global": 38.3,
+    "global": 50.2,
     "byCategory": [
-      {
-        "category": "Recon",
-        "score": 100
-      },
-      {
-        "category": "Privileges",
-        "score": 77.8
-      },
-      {
-        "category": "Services",
-        "score": 0
-      },
-      {
-        "category": "Auth",
-        "score": 0
-      },
       {
         "category": "FS_Perms",
         "score": 0
@@ -29,6 +13,22 @@
       {
         "category": "Audit",
         "score": 100
+      },
+      {
+        "category": "Recon",
+        "score": 100
+      },
+      {
+        "category": "Privileges",
+        "score": 85.7
+      },
+      {
+        "category": "Services",
+        "score": 28.6
+      },
+      {
+        "category": "Auth",
+        "score": 18.8
       }
     ]
   },
@@ -142,6 +142,106 @@
       "expected": "true",
       "severity": "Critical",
       "remediation": "Ensure only root has UID 0."
+    },
+    {
+      "id": "CIS-5.1.6",
+      "title": "X11Forwarding disabled",
+      "category": "Auth",
+      "status": "fail",
+      "observed": "default",
+      "expected": "no",
+      "severity": "Low",
+      "remediation": "Set 'X11Forwarding no' in /etc/ssh/sshd_config and reload sshd."
+    },
+    {
+      "id": "CIS-5.1.14",
+      "title": "SSH Banner configured",
+      "category": "Auth",
+      "status": "fail",
+      "observed": "absent",
+      "expected": "present",
+      "severity": "Low",
+      "remediation": "Set 'Banner /etc/issue.net' (or similar) and reload sshd."
+    },
+    {
+      "id": "CIS-3.3.3",
+      "title": "IPv6 accept_ra disabled (all)",
+      "category": "Services",
+      "status": "fail",
+      "observed": "1",
+      "expected": "0",
+      "severity": "Medium",
+      "remediation": "Set net.ipv6.conf.all.accept_ra=0 and persist."
+    },
+    {
+      "id": "CIS-3.3.5",
+      "title": "IPv6 accept_source_route disabled (all)",
+      "category": "Services",
+      "status": "pass",
+      "observed": "0",
+      "expected": "0",
+      "severity": "Medium",
+      "remediation": "Set net.ipv6.conf.all.accept_source_route=0 and persist."
+    },
+    {
+      "id": "CIS-3.2.1",
+      "title": "TCP SYN cookies enabled",
+      "category": "Services",
+      "status": "pass",
+      "observed": "1",
+      "expected": "1",
+      "severity": "Medium",
+      "remediation": "Set net.ipv4.tcp_syncookies=1 and persist."
+    },
+    {
+      "id": "CIS-5.2.4",
+      "title": "sudo timestamp_timeout is sane (\u003c=15)",
+      "category": "Privileges",
+      "status": "pass",
+      "observed": "true",
+      "expected": "true",
+      "severity": "Medium",
+      "remediation": "Set 'Defaults timestamp_timeout=15' (or lower)."
+    },
+    {
+      "id": "CIS-5.2.5",
+      "title": "No NOPASSWD wildcards in sudoers",
+      "category": "Privileges",
+      "status": "pass",
+      "observed": "true",
+      "expected": "true",
+      "severity": "High",
+      "remediation": "Remove 'NOPASSWD' with wildcard commands; require authentication."
+    },
+    {
+      "id": "CIS-5.3.1",
+      "title": "PAM pwquality present",
+      "category": "Auth",
+      "status": "fail",
+      "observed": "false",
+      "expected": "true",
+      "severity": "High",
+      "remediation": "Ensure pam_pwquality.so is configured in system-auth/password-auth (via authselect)."
+    },
+    {
+      "id": "CIS-5.3.2",
+      "title": "PAM pwhistory present",
+      "category": "Auth",
+      "status": "fail",
+      "observed": "false",
+      "expected": "true",
+      "severity": "High",
+      "remediation": "Ensure pam_pwhistory.so is configured in system-auth/password-auth (via authselect)."
+    },
+    {
+      "id": "CIS-5.3.3",
+      "title": "PAM faillock present",
+      "category": "Auth",
+      "status": "pass",
+      "observed": "true",
+      "expected": "true",
+      "severity": "High",
+      "remediation": "Ensure pam_faillock.so is configured in system-auth/password-auth (via authselect)."
     }
   ]
 }

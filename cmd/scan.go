@@ -2,13 +2,15 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"sort"
+	"time"
+
 	"github.com/Shunsuiky0raku/redcheck/pkg/checks"
 	htmlreport "github.com/Shunsuiky0raku/redcheck/pkg/report/html"
 	jsonreport "github.com/Shunsuiky0raku/redcheck/pkg/report/json"
 	"github.com/Shunsuiky0raku/redcheck/pkg/scoring"
 	"github.com/spf13/cobra"
-	"os"
-	"time"
 )
 
 var (
@@ -25,18 +27,18 @@ var scanCmd = &cobra.Command{
 	Short: "Run RedCheck scans",
 	Long:  "Run CIS Rocky v10 checks and/or attacker-centric recon checks and produce JSON/HTML reports.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// default to --all if none specified
+		// 1) default mode
 		if !flagAll && !flagCIS && !flagPE {
 			flagAll = true
 		}
 
-		// load rules
+		// 2) load rules
 		rs, err := checks.LoadRules()
 		if err != nil {
 			return err
 		}
 
-		// select rules (all == cis for now; we'll add tags/pe later)
+		// 3) select rules (all == cis for now; we'll add tags/pe later)
 		sel := make([]checks.Rule, 0, len(rs))
 		for _, r := range rs {
 			if flagAll || flagCIS {
@@ -44,7 +46,7 @@ var scanCmd = &cobra.Command{
 			}
 		}
 
-		// evaluate
+		// 4) evaluate
 		results := make([]checks.CheckResult, 0, len(sel))
 		for _, r := range sel {
 			results = append(results, checks.Evaluate(r))
@@ -53,27 +55,65 @@ var scanCmd = &cobra.Command{
 		fmt.Printf("Starting scan… (all=%v, cis=%v, pe=%v, timeout=%s)\n",
 			flagAll, flagCIS, flagPE, flagTimeout)
 
-		// write JSON if requested
+		// 5) compute scores (for terminal + HTML)
+		resIface := make([]scoring.Result, len(results))
+		for i := range results {
+			resIface[i] = results[i]
+		}
+		scores := scoring.Compute(resIface)
+
+		// 6) terminal summary
+		fmt.Printf("\nGlobal score: %.1f\n", scores.Global)
+		fmt.Println("Category scores:")
+		for _, cs := range scores.ByCategory {
+			fmt.Printf("  - %-10s : %.1f\n", cs.Category, cs.Score)
+		}
+		// Top 5 fixes (by severity)
+		sevRank := map[string]int{"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
+		fails := make([]checks.CheckResult, 0, len(results))
+		for _, r := range results {
+			if r.Status == "fail" {
+				fails = append(fails, r)
+			}
+		}
+		sort.Slice(fails, func(i, j int) bool {
+			si, sj := sevRank[fails[i].Severity], sevRank[fails[j].Severity]
+			if si != sj {
+				return si < sj
+			}
+			return fails[i].ID < fails[j].ID
+		})
+		if len(fails) > 5 {
+			fails = fails[:5]
+		}
+		if len(fails) > 0 {
+			fmt.Println("\nTop 5 fixes:")
+			for _, f := range fails {
+				fmt.Printf("  • [%s] %s — observed=%q → expected=%q\n", f.Category, f.Title, f.Observed, f.Expected)
+				fmt.Printf("    Remediation: %s\n", f.Remediation)
+			}
+		} else {
+			fmt.Println("\nNo failed checks 🎉")
+		}
+
+		// 7) write JSON (optional)
 		if jsonOut != "" {
 			if err := jsonreport.Write(jsonOut, results); err != nil {
 				return err
 			}
 			fmt.Println("JSON written to:", jsonOut)
 		}
+
+		// 8) write HTML (optional)
 		if htmlOut != "" {
 			h, _ := os.Hostname()
 			ts := time.Now().UTC().Format(time.RFC3339)
-			// recompute scores here or plumb them from the json writer—either is fine
-			resIface := make([]scoring.Result, len(results))
-			for i := range results {
-				resIface[i] = results[i]
-			}
-			scores := scoring.Compute(resIface)
 			if err := htmlreport.Write(htmlOut, h, ts, scores, results); err != nil {
 				return err
 			}
 			fmt.Println("HTML written to:", htmlOut)
 		}
+
 		return nil
 	},
 }
