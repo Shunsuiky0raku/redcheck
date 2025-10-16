@@ -1,0 +1,24 @@
+- id: "CIS-5.1.1"
+  title: "Disable root login over SSH"
+  fact: "ssh.permit_root_login"
+  expected: "no"
+  severity: "High"
+  remediation: "Set 'PermitRootLogin no' in /etc/ssh/sshd_config and reload sshd."
+  tags: ["cis","ssh"]
+
+- id: "CIS-1.1.2.2-devshm"
+  title: "/dev/shm mounted with nodev,nosuid,noexec"
+  fact: "mount.devshm_options"
+  expected_allof: ["nodev","nosuid","noexec"]
+  severity: "High"
+  remediation: "Ensure /dev/shm has nodev,nosuid,noexec (fstab or systemd mount)."
+  tags: ["cis","fs"]
+
+- id: "CIS-3.3.1"
+  title: "IPv6 redirects disabled (all)"
+  fact: "sysctl.net.ipv6.conf.all.accept_redirects"
+  expected: "0"
+  severity: "Medium"
+  remediation: "Set net.ipv6.conf.all.accept_redirects=0 and persist in sysctl.conf."
+  tags: ["cis","net"]
+

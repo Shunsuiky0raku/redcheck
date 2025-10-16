@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Shunsuiky0raku/redcheck/pkg/checks"
+	jsonreport "github.com/Shunsuiky0raku/redcheck/pkg/report/json"
 	"github.com/spf13/cobra"
 )
 
@@ -25,15 +27,43 @@ var scanCmd = &cobra.Command{
 		if !flagAll && !flagCIS && !flagPE {
 			flagAll = true
 		}
-		fmt.Printf("Starting scan… (all=%v, cis=%v, pe=%v, timeout=%s)\n", flagAll, flagCIS, flagPE, flagTimeout)
-		if jsonOut != "" {
-			fmt.Println("Will write JSON to:", jsonOut)
+
+		// load rules
+		rs, err := checks.LoadRules()
+		if err != nil {
+			return err
 		}
+
+		// select rules (all == cis for now; we'll add tags/pe later)
+		sel := make([]checks.Rule, 0, len(rs))
+		for _, r := range rs {
+			if flagAll || flagCIS {
+				sel = append(sel, r)
+			}
+		}
+
+		// evaluate
+		results := make([]checks.CheckResult, 0, len(sel))
+		for _, r := range sel {
+			results = append(results, checks.Evaluate(r))
+		}
+		fmt.Printf("Evaluated %d rules.\n", len(results))
+		fmt.Printf("Starting scan… (all=%v, cis=%v, pe=%v, timeout=%s)\n",
+			flagAll, flagCIS, flagPE, flagTimeout)
+
+		// write JSON if requested
+		if jsonOut != "" {
+			if err := jsonreport.Write(jsonOut, results); err != nil {
+				return err
+			}
+			fmt.Println("JSON written to:", jsonOut)
+		}
+
+		// write HTML later
 		if htmlOut != "" {
 			fmt.Println("Will write HTML to:", htmlOut)
+			// TODO: call html reporter
 		}
-		// TODO: call pkg/host, pkg/checks, pkg/scoring, pkg/report
-		fmt.Println("Scan complete (stub).")
 		return nil
 	},
 }
