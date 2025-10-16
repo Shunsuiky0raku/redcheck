@@ -47,6 +47,17 @@ func Evaluate(rule Rule) CheckResult {
 		val, err = FirewalldState()
 	case "crypto.policy":
 		val, err = CryptoPolicy()
+	case "mount.tmp_options":
+		val, err = MountOptions("/tmp")
+	case "mount.vartmp_options":
+		val, err = MountOptions("/var/tmp")
+	case "sudo.use_pty":
+		val, err = SudoUsePTY()
+	case "sudo.logfile":
+		val, err = SudoLogfile()
+	case "acct.uid0_unique":
+		val, err = UID0Unique()
+
 	default:
 		val = "unknown"
 	}

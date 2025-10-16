@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/Shunsuiky0raku/redcheck/pkg/checks"
+	htmlreport "github.com/Shunsuiky0raku/redcheck/pkg/report/html"
 	jsonreport "github.com/Shunsuiky0raku/redcheck/pkg/report/json"
+	"github.com/Shunsuiky0raku/redcheck/pkg/scoring"
 	"github.com/spf13/cobra"
+	"os"
+	"time"
 )
 
 var (
@@ -58,11 +60,19 @@ var scanCmd = &cobra.Command{
 			}
 			fmt.Println("JSON written to:", jsonOut)
 		}
-
-		// write HTML later
 		if htmlOut != "" {
-			fmt.Println("Will write HTML to:", htmlOut)
-			// TODO: call html reporter
+			h, _ := os.Hostname()
+			ts := time.Now().UTC().Format(time.RFC3339)
+			// recompute scores here or plumb them from the json writer—either is fine
+			resIface := make([]scoring.Result, len(results))
+			for i := range results {
+				resIface[i] = results[i]
+			}
+			scores := scoring.Compute(resIface)
+			if err := htmlreport.Write(htmlOut, h, ts, scores, results); err != nil {
+				return err
+			}
+			fmt.Println("HTML written to:", htmlOut)
 		}
 		return nil
 	},

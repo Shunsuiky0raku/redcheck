@@ -50,4 +50,47 @@
   severity: "Medium"
   remediation: "Use `update-crypto-policies --set DEFAULT` (or higher), avoid LEGACY."
   tags: ["cis","crypto"]
+- id: "CIS-1.1.2.2-tmp"
+  title: "/tmp mounted with nodev,nosuid,noexec"
+  category: "FS_Perms"
+  fact: "mount.tmp_options"
+  expected_allof: ["nodev","nosuid","noexec"]
+  severity: "High"
+  remediation: "Ensure /tmp has nodev,nosuid,noexec (fstab or systemd tmp.mount)."
+  tags: ["cis","fs"]
+
+- id: "CIS-1.1.2.2-vartmp"
+  title: "/var/tmp mounted with nodev,nosuid,noexec"
+  category: "FS_Perms"
+  fact: "mount.vartmp_options"
+  expected_allof: ["nodev","nosuid","noexec"]
+  severity: "High"
+  remediation: "Ensure /var/tmp has nodev,nosuid,noexec."
+  tags: ["cis","fs"]
+- id: "CIS-5.2.2"
+  title: "sudo uses pty"
+  category: "Privileges"
+  fact: "sudo.use_pty"
+  expected: "true"
+  severity: "High"
+  remediation: "Add 'Defaults use_pty' in sudoers."
+  tags: ["cis","sudo"]
+
+- id: "CIS-5.2.3"
+  title: "sudo has logfile"
+  category: "Privileges"
+  fact: "sudo.logfile"
+  expected: "true"
+  severity: "Medium"
+  remediation: "Add 'Defaults logfile=\"/var/log/sudo.log\"' in sudoers."
+  tags: ["cis","sudo"]
+
+- id: "CIS-5.4.1"
+  title: "Only root has UID 0"
+  category: "Privileges"
+  fact: "acct.uid0_unique"
+  expected: "true"
+  severity: "Critical"
+  remediation: "Ensure only root has UID 0."
+  tags: ["cis","accounts"]
 

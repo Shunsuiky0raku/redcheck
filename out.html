@@ -1,0 +1,195 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>RedCheck Report</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;margin:24px;line-height:1.4}
+h1,h2{margin:0 0 8px}
+.card{border:1px solid #eee;border-radius:12px;padding:16px;margin:12px 0}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px}
+.pass{background:#e8f5e9} .fail{background:#ffebee} .error{background:#fff3e0} .na{background:#eceff1}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.bar{height:10px;background:#eee;border-radius:6px;overflow:hidden}
+.fill{height:100%;background:#4caf50}
+.small{color:#555;font-size:12px}
+table{width:100%;border-collapse:collapse}
+th,td{border-top:1px solid #eee;padding:8px;text-align:left;vertical-align:top}
+code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
+</style>
+
+<h1>RedCheck Report</h1>
+<div class="small">Host: KompanyArch &middot; Time: 2025-10-16T09:36:29Z</div>
+
+<div class="card">
+  <h2>Score</h2>
+  <div>Global: <b>38.3</b></div>
+  
+    <div style="margin-top:8px">Audit — 100.0
+      <div class="bar"><div class="fill" style="width:100%"></div></div>
+    </div>
+  
+    <div style="margin-top:8px">Recon — 100.0
+      <div class="bar"><div class="fill" style="width:100%"></div></div>
+    </div>
+  
+    <div style="margin-top:8px">Privileges — 77.8
+      <div class="bar"><div class="fill" style="width:78%"></div></div>
+    </div>
+  
+    <div style="margin-top:8px">Services — 0.0
+      <div class="bar"><div class="fill" style="width:0%"></div></div>
+    </div>
+  
+    <div style="margin-top:8px">Auth — 0.0
+      <div class="bar"><div class="fill" style="width:0%"></div></div>
+    </div>
+  
+    <div style="margin-top:8px">FS_Perms — 0.0
+      <div class="bar"><div class="fill" style="width:0%"></div></div>
+    </div>
+  
+</div>
+
+<div class="card">
+  <h2>Top 5 fixes</h2>
+  
+  
+    <div style="margin-bottom:8px">
+      <b>/dev/shm mounted with nodev,nosuid,noexec</b> <span class="badge fail">fail</span>
+      <div class="small">Observed: <code>rw,nosuid,nodev,inode64,usrquota</code> → Expected: <code>nodev,nosuid,noexec</code></div>
+      <div class="small">Remediation: Ensure /dev/shm has nodev,nosuid,noexec (fstab or systemd mount).</div>
+    </div>
+  
+    <div style="margin-bottom:8px">
+      <b>/tmp mounted with nodev,nosuid,noexec</b> <span class="badge fail">fail</span>
+      <div class="small">Observed: <code>rw,nosuid,nodev,nr_inodes=1048576,inode64,usrquota</code> → Expected: <code>nodev,nosuid,noexec</code></div>
+      <div class="small">Remediation: Ensure /tmp has nodev,nosuid,noexec (fstab or systemd tmp.mount).</div>
+    </div>
+  
+    <div style="margin-bottom:8px">
+      <b>firewalld installed</b> <span class="badge fail">fail</span>
+      <div class="small">Observed: <code>absent</code> → Expected: <code>present</code></div>
+      <div class="small">Remediation: Install firewalld and enable the service.</div>
+    </div>
+  
+    <div style="margin-bottom:8px">
+      <b>firewalld enabled and active</b> <span class="badge fail">fail</span>
+      <div class="small">Observed: <code>disabled_inactive</code> → Expected: <code>enabled_active</code></div>
+      <div class="small">Remediation: systemctl enable --now firewalld</div>
+    </div>
+  
+    <div style="margin-bottom:8px">
+      <b>Disable root login over SSH</b> <span class="badge fail">fail</span>
+      <div class="small">Observed: <code>default</code> → Expected: <code>no</code></div>
+      <div class="small">Remediation: Set &#39;PermitRootLogin no&#39; in /etc/ssh/sshd_config and reload sshd.</div>
+    </div>
+  
+</div>
+
+<div class="card">
+  <h2>All results</h2>
+  <table>
+    <thead><tr><th>ID</th><th>Title</th><th>Category</th><th>Status</th><th>Observed → Expected</th><th>Remediation</th></tr></thead>
+    <tbody>
+      
+      <tr>
+        <td><code>CIS-5.1.1</code></td>
+        <td>Disable root login over SSH</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>default</code> → <code>no</code></td>
+        <td class="small">Set &#39;PermitRootLogin no&#39; in /etc/ssh/sshd_config and reload sshd.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-1.1.2.2-devshm</code></td>
+        <td>/dev/shm mounted with nodev,nosuid,noexec</td>
+        <td>FS_Perms</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>rw,nosuid,nodev,inode64,usrquota</code> → <code>nodev,nosuid,noexec</code></td>
+        <td class="small">Ensure /dev/shm has nodev,nosuid,noexec (fstab or systemd mount).</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-3.3.1</code></td>
+        <td>IPv6 redirects disabled (all)</td>
+        <td>Services</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>1</code> → <code>0</code></td>
+        <td class="small">Set net.ipv6.conf.all.accept_redirects=0 and persist in sysctl.conf.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-4.1.1</code></td>
+        <td>firewalld installed</td>
+        <td>Services</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>absent</code> → <code>present</code></td>
+        <td class="small">Install firewalld and enable the service.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-4.1.2</code></td>
+        <td>firewalld enabled and active</td>
+        <td>Services</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>disabled_inactive</code> → <code>enabled_active</code></td>
+        <td class="small">systemctl enable --now firewalld</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-1.6.1</code></td>
+        <td>Crypto policy not LEGACY</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>unknown</code> → <code>NOT_LEGACY</code></td>
+        <td class="small">Use `update-crypto-policies --set DEFAULT` (or higher), avoid LEGACY.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-1.1.2.2-tmp</code></td>
+        <td>/tmp mounted with nodev,nosuid,noexec</td>
+        <td>FS_Perms</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>rw,nosuid,nodev,nr_inodes=1048576,inode64,usrquota</code> → <code>nodev,nosuid,noexec</code></td>
+        <td class="small">Ensure /tmp has nodev,nosuid,noexec (fstab or systemd tmp.mount).</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-1.1.2.2-vartmp</code></td>
+        <td>/var/tmp mounted with nodev,nosuid,noexec</td>
+        <td>FS_Perms</td>
+        <td><span class="badge error">error</span></td>
+        <td class="small"><code></code> → <code>nodev,nosuid,noexec</code></td>
+        <td class="small">Ensure /var/tmp has nodev,nosuid,noexec.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.2.2</code></td>
+        <td>sudo uses pty</td>
+        <td>Privileges</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>true</code> → <code>true</code></td>
+        <td class="small">Add &#39;Defaults use_pty&#39; in sudoers.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.2.3</code></td>
+        <td>sudo has logfile</td>
+        <td>Privileges</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>false</code> → <code>true</code></td>
+        <td class="small">Add &#39;Defaults logfile=&#34;/var/log/sudo.log&#34;&#39; in sudoers.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.4.1</code></td>
+        <td>Only root has UID 0</td>
+        <td>Privileges</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>true</code> → <code>true</code></td>
+        <td class="small">Ensure only root has UID 0.</td>
+      </tr>
+      
+    </tbody>
+  </table>
+</div>

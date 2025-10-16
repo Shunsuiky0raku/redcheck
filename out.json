@@ -1,10 +1,10 @@
 {
   "host": {
     "hostname": "KompanyArch",
-    "time": "2025-10-16T08:08:10Z"
+    "time": "2025-10-16T09:36:29Z"
   },
   "scores": {
-    "global": 45,
+    "global": 38.3,
     "byCategory": [
       {
         "category": "Recon",
@@ -12,7 +12,7 @@
       },
       {
         "category": "Privileges",
-        "score": 100
+        "score": 77.8
       },
       {
         "category": "Services",
@@ -92,6 +92,56 @@
       "expected": "NOT_LEGACY",
       "severity": "Medium",
       "remediation": "Use `update-crypto-policies --set DEFAULT` (or higher), avoid LEGACY."
+    },
+    {
+      "id": "CIS-1.1.2.2-tmp",
+      "title": "/tmp mounted with nodev,nosuid,noexec",
+      "category": "FS_Perms",
+      "status": "fail",
+      "observed": "rw,nosuid,nodev,nr_inodes=1048576,inode64,usrquota",
+      "expected": "nodev,nosuid,noexec",
+      "severity": "High",
+      "remediation": "Ensure /tmp has nodev,nosuid,noexec (fstab or systemd tmp.mount)."
+    },
+    {
+      "id": "CIS-1.1.2.2-vartmp",
+      "title": "/var/tmp mounted with nodev,nosuid,noexec",
+      "category": "FS_Perms",
+      "status": "error",
+      "observed": "",
+      "expected": "nodev,nosuid,noexec",
+      "severity": "High",
+      "remediation": "Ensure /var/tmp has nodev,nosuid,noexec."
+    },
+    {
+      "id": "CIS-5.2.2",
+      "title": "sudo uses pty",
+      "category": "Privileges",
+      "status": "pass",
+      "observed": "true",
+      "expected": "true",
+      "severity": "High",
+      "remediation": "Add 'Defaults use_pty' in sudoers."
+    },
+    {
+      "id": "CIS-5.2.3",
+      "title": "sudo has logfile",
+      "category": "Privileges",
+      "status": "fail",
+      "observed": "false",
+      "expected": "true",
+      "severity": "Medium",
+      "remediation": "Add 'Defaults logfile=\"/var/log/sudo.log\"' in sudoers."
+    },
+    {
+      "id": "CIS-5.4.1",
+      "title": "Only root has UID 0",
+      "category": "Privileges",
+      "status": "pass",
+      "observed": "true",
+      "expected": "true",
+      "severity": "Critical",
+      "remediation": "Ensure only root has UID 0."
     }
   ]
 }

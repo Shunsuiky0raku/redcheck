@@ -1,0 +1,111 @@
+package htmlreport
+
+import (
+	"html/template"
+	"os"
+	"sort"
+
+	"github.com/Shunsuiky0raku/redcheck/pkg/checks"
+	"github.com/Shunsuiky0raku/redcheck/pkg/scoring"
+)
+
+type ViewModel struct {
+	Hostname string
+	Time     string
+	Scores   scoring.Scores
+	Results  []checks.CheckResult
+	TopFixes []checks.CheckResult
+}
+
+const tpl = `<!doctype html>
+<meta charset="utf-8">
+<title>RedCheck Report</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;margin:24px;line-height:1.4}
+h1,h2{margin:0 0 8px}
+.card{border:1px solid #eee;border-radius:12px;padding:16px;margin:12px 0}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px}
+.pass{background:#e8f5e9} .fail{background:#ffebee} .error{background:#fff3e0} .na{background:#eceff1}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.bar{height:10px;background:#eee;border-radius:6px;overflow:hidden}
+.fill{height:100%;background:#4caf50}
+.small{color:#555;font-size:12px}
+table{width:100%;border-collapse:collapse}
+th,td{border-top:1px solid #eee;padding:8px;text-align:left;vertical-align:top}
+code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
+</style>
+
+<h1>RedCheck Report</h1>
+<div class="small">Host: {{.Hostname}} &middot; Time: {{.Time}}</div>
+
+<div class="card">
+  <h2>Score</h2>
+  <div>Global: <b>{{printf "%.1f" .Scores.Global}}</b></div>
+  {{range .Scores.ByCategory}}
+    <div style="margin-top:8px">{{.Category}} — {{printf "%.1f" .Score}}
+      <div class="bar"><div class="fill" style="width:{{printf "%.0f" .Score}}%"></div></div>
+    </div>
+  {{end}}
+</div>
+
+<div class="card">
+  <h2>Top 5 fixes</h2>
+  {{if not .TopFixes}}<div class="small">No failed checks 🎉</div>{{end}}
+  {{range .TopFixes}}
+    <div style="margin-bottom:8px">
+      <b>{{.Title}}</b> <span class="badge fail">fail</span>
+      <div class="small">Observed: <code>{{.Observed}}</code> → Expected: <code>{{.Expected}}</code></div>
+      <div class="small">Remediation: {{.Remediation}}</div>
+    </div>
+  {{end}}
+</div>
+
+<div class="card">
+  <h2>All results</h2>
+  <table>
+    <thead><tr><th>ID</th><th>Title</th><th>Category</th><th>Status</th><th>Observed → Expected</th><th>Remediation</th></tr></thead>
+    <tbody>
+      {{range .Results}}
+      <tr>
+        <td><code>{{.ID}}</code></td>
+        <td>{{.Title}}</td>
+        <td>{{.Category}}</td>
+        <td><span class="badge {{.Status}}">{{.Status}}</span></td>
+        <td class="small"><code>{{.Observed}}</code> → <code>{{.Expected}}</code></td>
+        <td class="small">{{.Remediation}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+`
+
+func Write(path, hostname, tstamp string, scores scoring.Scores, results []checks.CheckResult) error {
+	// pick Top 5 by severity then status=fail
+	fail := make([]checks.CheckResult, 0, len(results))
+	for _, r := range results {
+		if r.Status == "fail" {
+			fail = append(fail, r)
+		}
+	}
+	sevRank := map[string]int{"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
+	sort.Slice(fail, func(i, j int) bool {
+		si, sj := sevRank[fail[i].Severity], sevRank[fail[j].Severity]
+		if si != sj {
+			return si < sj
+		}
+		return fail[i].ID < fail[j].ID
+	})
+	if len(fail) > 5 {
+		fail = fail[:5]
+	}
+
+	vm := ViewModel{Hostname: hostname, Time: tstamp, Scores: scores, Results: results, TopFixes: fail}
+	t := template.Must(template.New("r").Parse(tpl))
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return t.Execute(f, vm)
+}
