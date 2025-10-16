@@ -1,7 +1,97 @@
 {
   "host": {
     "hostname": "KompanyArch",
-    "time": "2025-10-16T06:53:51Z"
+    "time": "2025-10-16T08:08:10Z"
   },
-  "results": null
+  "scores": {
+    "global": 45,
+    "byCategory": [
+      {
+        "category": "Recon",
+        "score": 100
+      },
+      {
+        "category": "Privileges",
+        "score": 100
+      },
+      {
+        "category": "Services",
+        "score": 0
+      },
+      {
+        "category": "Auth",
+        "score": 0
+      },
+      {
+        "category": "FS_Perms",
+        "score": 0
+      },
+      {
+        "category": "Audit",
+        "score": 100
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "CIS-5.1.1",
+      "title": "Disable root login over SSH",
+      "category": "Auth",
+      "status": "fail",
+      "observed": "default",
+      "expected": "no",
+      "severity": "High",
+      "remediation": "Set 'PermitRootLogin no' in /etc/ssh/sshd_config and reload sshd."
+    },
+    {
+      "id": "CIS-1.1.2.2-devshm",
+      "title": "/dev/shm mounted with nodev,nosuid,noexec",
+      "category": "FS_Perms",
+      "status": "fail",
+      "observed": "rw,nosuid,nodev,inode64,usrquota",
+      "expected": "nodev,nosuid,noexec",
+      "severity": "High",
+      "remediation": "Ensure /dev/shm has nodev,nosuid,noexec (fstab or systemd mount)."
+    },
+    {
+      "id": "CIS-3.3.1",
+      "title": "IPv6 redirects disabled (all)",
+      "category": "Services",
+      "status": "fail",
+      "observed": "1",
+      "expected": "0",
+      "severity": "Medium",
+      "remediation": "Set net.ipv6.conf.all.accept_redirects=0 and persist in sysctl.conf."
+    },
+    {
+      "id": "CIS-4.1.1",
+      "title": "firewalld installed",
+      "category": "Services",
+      "status": "fail",
+      "observed": "absent",
+      "expected": "present",
+      "severity": "High",
+      "remediation": "Install firewalld and enable the service."
+    },
+    {
+      "id": "CIS-4.1.2",
+      "title": "firewalld enabled and active",
+      "category": "Services",
+      "status": "fail",
+      "observed": "disabled_inactive",
+      "expected": "enabled_active",
+      "severity": "High",
+      "remediation": "systemctl enable --now firewalld"
+    },
+    {
+      "id": "CIS-1.6.1",
+      "title": "Crypto policy not LEGACY",
+      "category": "Auth",
+      "status": "fail",
+      "observed": "unknown",
+      "expected": "NOT_LEGACY",
+      "severity": "Medium",
+      "remediation": "Use `update-crypto-policies --set DEFAULT` (or higher), avoid LEGACY."
+    }
+  ]
 }

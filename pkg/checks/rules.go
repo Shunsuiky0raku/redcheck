@@ -9,6 +9,7 @@ import (
 type Rule struct {
 	ID          string   `yaml:"id" json:"id"`
 	Title       string   `yaml:"title" json:"title"`
+	Category    string   `yaml:"category" json:"category"`
 	Fact        string   `yaml:"fact" json:"fact"`
 	Expected    string   `yaml:"expected,omitempty" json:"expected,omitempty"`
 	ExpectedAll []string `yaml:"expected_allof,omitempty" json:"expected_allof,omitempty"`

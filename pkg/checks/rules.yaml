@@ -1,5 +1,6 @@
 - id: "CIS-5.1.1"
   title: "Disable root login over SSH"
+  category: "Auth"
   fact: "ssh.permit_root_login"
   expected: "no"
   severity: "High"
@@ -8,6 +9,7 @@
 
 - id: "CIS-1.1.2.2-devshm"
   title: "/dev/shm mounted with nodev,nosuid,noexec"
+  category: "FS_Perms"
   fact: "mount.devshm_options"
   expected_allof: ["nodev","nosuid","noexec"]
   severity: "High"
@@ -16,9 +18,36 @@
 
 - id: "CIS-3.3.1"
   title: "IPv6 redirects disabled (all)"
+  category: "Services"
   fact: "sysctl.net.ipv6.conf.all.accept_redirects"
   expected: "0"
   severity: "Medium"
   remediation: "Set net.ipv6.conf.all.accept_redirects=0 and persist in sysctl.conf."
   tags: ["cis","net"]
+- id: "CIS-4.1.1"
+  title: "firewalld installed"
+  category: "Services"
+  fact: "pkg.firewalld_installed"
+  expected: "present"
+  severity: "High"
+  remediation: "Install firewalld and enable the service."
+  tags: ["cis","services"]
+
+- id: "CIS-4.1.2"
+  title: "firewalld enabled and active"
+  category: "Services"
+  fact: "svc.firewalld_state"
+  expected: "enabled_active"
+  severity: "High"
+  remediation: "systemctl enable --now firewalld"
+  tags: ["cis","services"]
+
+- id: "CIS-1.6.1"
+  title: "Crypto policy not LEGACY"
+  category: "Auth"
+  fact: "crypto.policy"
+  expected: "NOT_LEGACY"
+  severity: "Medium"
+  remediation: "Use `update-crypto-policies --set DEFAULT` (or higher), avoid LEGACY."
+  tags: ["cis","crypto"]
 
