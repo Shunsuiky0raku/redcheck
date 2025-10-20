@@ -93,9 +93,53 @@ func Evaluate(rule Rule) CheckResult {
 	case "useradd.inactive_ok":
 		val, err = UseraddInactiveOK()
 
+		// PAM args
 	case "pam.pwquality_minlen_ok":
-		v := PamPwqualityArgs()
-		val = boolToStr(atoi(v["minlen"]) >= 14)
+		a := PamPwqualityArgs()
+		val = boolToStr(atoi(a["minlen"]) >= 14)
+	case "pam.pwquality_retry_ok":
+		a := PamPwqualityArgs()
+		// if retry is missing, fail safe (treat as false)
+		v := a["retry"]
+		if v == "" {
+			val = "false"
+		} else {
+			val = boolToStr(atoi(v) <= 3)
+		}
+	case "pam.pwhistory_remember_ok":
+		a := PamPwhistoryArgs()
+		v := a["remember"]
+		if v == "" {
+			val = "false"
+		} else {
+			val = boolToStr(atoi(v) >= 5)
+		}
+	case "pam.faillock_deny_ok":
+		a := PamFaillockArgs()
+		v := a["deny"]
+		if v == "" {
+			val = "false"
+		} else {
+			val = boolToStr(atoi(v) <= 5)
+		}
+	case "pam.faillock_unlock_ok":
+		a := PamFaillockArgs()
+		v := a["unlock_time"]
+		if v == "" {
+			val = "false"
+		} else {
+			val = boolToStr(atoi(v) >= 900)
+		}
+
+		// IPv4 sysctls
+	case "sysctl.net.ipv4.conf.all.accept_redirects":
+		val, err = SysctlValue("net.ipv4.conf.all.accept_redirects")
+	case "sysctl.net.ipv4.conf.default.accept_redirects":
+		val, err = SysctlValue("net.ipv4.conf.default.accept_redirects")
+	case "sysctl.net.ipv4.conf.all.accept_source_route":
+		val, err = SysctlValue("net.ipv4.conf.all.accept_source_route")
+	case "sysctl.net.ipv4.conf.default.accept_source_route":
+		val, err = SysctlValue("net.ipv4.conf.default.accept_source_route")
 
 	default:
 		val = "unknown"

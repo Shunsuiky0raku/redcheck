@@ -17,11 +17,19 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
 </style>
 
 <h1>RedCheck Report</h1>
-<div class="small">Host: KompanyArch &middot; Time: 2025-10-20T11:09:38Z</div>
+<div class="small">Host: KompanyArch &middot; Time: 2025-10-20T12:07:55Z</div>
 
 <div class="card">
   <h2>Score</h2>
-  <div>Global: <b>50.1</b></div>
+  <div>Global: <b>50.4</b></div>
+  
+    <div style="margin-top:8px">Services — 35.7
+      <div class="bar"><div class="fill" style="width:36%"></div></div>
+    </div>
+  
+    <div style="margin-top:8px">Auth — 12.5
+      <div class="bar"><div class="fill" style="width:12%"></div></div>
+    </div>
   
     <div style="margin-top:8px">FS_Perms — 0.0
       <div class="bar"><div class="fill" style="width:0%"></div></div>
@@ -37,14 +45,6 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
   
     <div style="margin-top:8px">Privileges — 85.7
       <div class="bar"><div class="fill" style="width:86%"></div></div>
-    </div>
-  
-    <div style="margin-top:8px">Services — 30.0
-      <div class="bar"><div class="fill" style="width:30%"></div></div>
-    </div>
-  
-    <div style="margin-top:8px">Auth — 16.7
-      <div class="bar"><div class="fill" style="width:17%"></div></div>
     </div>
   
 </div>
@@ -350,6 +350,87 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
         <td><span class="badge fail">fail</span></td>
         <td class="small"><code>false</code> → <code>true</code></td>
         <td class="small">Set minlen=14 in pam_pwquality.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.3.1-minlen</code></td>
+        <td>pwquality minlen &gt;= 14</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>false</code> → <code>true</code></td>
+        <td class="small">In pam_pwquality.so line(s), set minlen=14 or higher.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.3.1-retry</code></td>
+        <td>pwquality retry &lt;= 3</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>false</code> → <code>true</code></td>
+        <td class="small">In pam_pwquality.so line(s), set retry=3 or lower.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.3.2-remember</code></td>
+        <td>pwhistory remember &gt;= 5</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>false</code> → <code>true</code></td>
+        <td class="small">In pam_pwhistory.so line(s), set remember=5 or higher.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.3.3-fail-deny</code></td>
+        <td>faillock deny &lt;= 5</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>false</code> → <code>true</code></td>
+        <td class="small">In pam_faillock.so line(s), set deny=5 or lower.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.3.3-fail-unlock</code></td>
+        <td>faillock unlock_time &gt;= 900</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>false</code> → <code>true</code></td>
+        <td class="small">In pam_faillock.so line(s), set unlock_time=900 or higher.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-3.2.2</code></td>
+        <td>IPv4 redirects disabled (all)</td>
+        <td>Services</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>1</code> → <code>0</code></td>
+        <td class="small">Set net.ipv4.conf.all.accept_redirects=0 and persist.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-3.2.3</code></td>
+        <td>IPv4 redirects disabled (default)</td>
+        <td>Services</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>1</code> → <code>0</code></td>
+        <td class="small">Set net.ipv4.conf.default.accept_redirects=0 and persist.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-3.2.4</code></td>
+        <td>IPv4 accept_source_route disabled (all)</td>
+        <td>Services</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>0</code> → <code>0</code></td>
+        <td class="small">Set net.ipv4.conf.all.accept_source_route=0 and persist.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-3.2.5</code></td>
+        <td>IPv4 accept_source_route disabled (default)</td>
+        <td>Services</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>0</code> → <code>0</code></td>
+        <td class="small">Set net.ipv4.conf.default.accept_source_route=0 and persist.</td>
       </tr>
       
     </tbody>
