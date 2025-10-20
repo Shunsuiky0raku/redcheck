@@ -1,23 +1,11 @@
 {
   "host": {
     "hostname": "KompanyArch",
-    "time": "2025-10-20T12:07:55Z"
+    "time": "2025-10-20T13:12:41Z"
   },
   "scores": {
-    "global": 50.4,
+    "global": 50.2,
     "byCategory": [
-      {
-        "category": "Services",
-        "score": 35.7
-      },
-      {
-        "category": "Auth",
-        "score": 12.5
-      },
-      {
-        "category": "FS_Perms",
-        "score": 0
-      },
       {
         "category": "Audit",
         "score": 100
@@ -29,6 +17,18 @@
       {
         "category": "Privileges",
         "score": 85.7
+      },
+      {
+        "category": "Services",
+        "score": 35.7
+      },
+      {
+        "category": "Auth",
+        "score": 11.8
+      },
+      {
+        "category": "FS_Perms",
+        "score": 0
       }
     ]
   },
@@ -412,6 +412,16 @@
       "expected": "0",
       "severity": "Medium",
       "remediation": "Set net.ipv4.conf.default.accept_source_route=0 and persist."
+    },
+    {
+      "id": "CIS-5.4.users-aging",
+      "title": "Local users comply with aging policy",
+      "category": "Auth",
+      "status": "fail",
+      "observed": "false",
+      "expected": "true",
+      "severity": "Medium",
+      "remediation": "For each flagged user, adjust with 'chage' (MAX\u003c=365, MIN\u003e=1, INACTIVE\u003c=30)."
     }
   ]
 }

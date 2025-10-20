@@ -61,6 +61,9 @@ var scanCmd = &cobra.Command{
 			resIface[i] = results[i]
 		}
 		scores := scoring.Compute(resIface)
+		if os.Geteuid() != 0 {
+			fmt.Println("\n[warn] running as non-root: some checks may be incomplete (marked error/na). Try 'sudo redcheck scan ...' for full coverage.")
+		}
 
 		// 6) terminal summary
 		fmt.Printf("\nGlobal score: %.1f\n", scores.Global)

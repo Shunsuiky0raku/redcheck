@@ -92,6 +92,13 @@ func Evaluate(rule Rule) CheckResult {
 		val, err = LoginDefsPassWarnAgeOK()
 	case "useradd.inactive_ok":
 		val, err = UseraddInactiveOK()
+	case "accounts.aging_policy_ok":
+		var obs string
+		val, obs, err = AccountsAgingPolicyOK()
+		// store offenders detail (if any) into Observed
+		if obs != "" {
+			res.Observed = obs
+		}
 
 		// PAM args
 	case "pam.pwquality_minlen_ok":

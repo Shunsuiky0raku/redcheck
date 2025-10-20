@@ -17,17 +17,21 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
 </style>
 
 <h1>RedCheck Report</h1>
-<div class="small">Host: KompanyArch &middot; Time: 2025-10-20T12:07:55Z</div>
+<div class="small">Host: KompanyArch &middot; Time: 2025-10-20T13:12:41Z</div>
 
 <div class="card">
   <h2>Score</h2>
-  <div>Global: <b>50.4</b></div>
+  <div>Global: <b>50.2</b></div>
+  
+    <div style="margin-top:8px">Privileges — 85.7
+      <div class="bar"><div class="fill" style="width:86%"></div></div>
+    </div>
   
     <div style="margin-top:8px">Services — 35.7
       <div class="bar"><div class="fill" style="width:36%"></div></div>
     </div>
   
-    <div style="margin-top:8px">Auth — 12.5
+    <div style="margin-top:8px">Auth — 11.8
       <div class="bar"><div class="fill" style="width:12%"></div></div>
     </div>
   
@@ -41,10 +45,6 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
   
     <div style="margin-top:8px">Recon — 100.0
       <div class="bar"><div class="fill" style="width:100%"></div></div>
-    </div>
-  
-    <div style="margin-top:8px">Privileges — 85.7
-      <div class="bar"><div class="fill" style="width:86%"></div></div>
     </div>
   
 </div>
@@ -431,6 +431,15 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
         <td><span class="badge pass">pass</span></td>
         <td class="small"><code>0</code> → <code>0</code></td>
         <td class="small">Set net.ipv4.conf.default.accept_source_route=0 and persist.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.4.users-aging</code></td>
+        <td>Local users comply with aging policy</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>false</code> → <code>true</code></td>
+        <td class="small">For each flagged user, adjust with &#39;chage&#39; (MAX&lt;=365, MIN&gt;=1, INACTIVE&lt;=30).</td>
       </tr>
       
     </tbody>
