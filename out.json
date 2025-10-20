@@ -1,11 +1,19 @@
 {
   "host": {
     "hostname": "KompanyArch",
-    "time": "2025-10-16T10:14:05Z"
+    "time": "2025-10-19T08:05:55Z"
   },
   "scores": {
-    "global": 50.2,
+    "global": 50.4,
     "byCategory": [
+      {
+        "category": "Services",
+        "score": 30
+      },
+      {
+        "category": "Auth",
+        "score": 18.2
+      },
       {
         "category": "FS_Perms",
         "score": 0
@@ -21,14 +29,6 @@
       {
         "category": "Privileges",
         "score": 85.7
-      },
-      {
-        "category": "Services",
-        "score": 28.6
-      },
-      {
-        "category": "Auth",
-        "score": 18.8
       }
     ]
   },
@@ -242,6 +242,76 @@
       "expected": "true",
       "severity": "High",
       "remediation": "Ensure pam_faillock.so is configured in system-auth/password-auth (via authselect)."
+    },
+    {
+      "id": "CIS-3.3.2",
+      "title": "IPv6 redirects disabled (default)",
+      "category": "Services",
+      "status": "fail",
+      "observed": "1",
+      "expected": "0",
+      "severity": "Medium",
+      "remediation": "Set net.ipv6.conf.default.accept_redirects=0 and persist."
+    },
+    {
+      "id": "CIS-3.3.4",
+      "title": "IPv6 accept_ra disabled (default)",
+      "category": "Services",
+      "status": "fail",
+      "observed": "1",
+      "expected": "0",
+      "severity": "Medium",
+      "remediation": "Set net.ipv6.conf.default.accept_ra=0 and persist."
+    },
+    {
+      "id": "CIS-3.3.6",
+      "title": "IPv6 accept_source_route disabled (default)",
+      "category": "Services",
+      "status": "pass",
+      "observed": "0",
+      "expected": "0",
+      "severity": "Medium",
+      "remediation": "Set net.ipv6.conf.default.accept_source_route=0 and persist."
+    },
+    {
+      "id": "CIS-5.4.2",
+      "title": "PASS_MAX_DAYS \u003c= 365",
+      "category": "Auth",
+      "status": "fail",
+      "observed": "false",
+      "expected": "true",
+      "severity": "Medium",
+      "remediation": "Set PASS_MAX_DAYS 365 (or lower) in /etc/login.defs."
+    },
+    {
+      "id": "CIS-5.4.3",
+      "title": "PASS_MIN_DAYS \u003e= 1",
+      "category": "Auth",
+      "status": "fail",
+      "observed": "false",
+      "expected": "true",
+      "severity": "Low",
+      "remediation": "Set PASS_MIN_DAYS 1 (or higher) in /etc/login.defs."
+    },
+    {
+      "id": "CIS-5.4.4",
+      "title": "PASS_WARN_AGE \u003e= 7",
+      "category": "Auth",
+      "status": "pass",
+      "observed": "true",
+      "expected": "true",
+      "severity": "Low",
+      "remediation": "Set PASS_WARN_AGE 7 (or higher) in /etc/login.defs."
+    },
+    {
+      "id": "CIS-5.4.5",
+      "title": "Default INACTIVE \u003c= 30 days",
+      "category": "Auth",
+      "status": "fail",
+      "observed": "false",
+      "expected": "true",
+      "severity": "Medium",
+      "remediation": "Set `useradd -D -f 30` to enforce default inactive lock."
     }
   ]
 }

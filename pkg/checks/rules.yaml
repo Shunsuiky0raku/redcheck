@@ -186,4 +186,69 @@
   severity: "High"
   remediation: "Ensure pam_faillock.so is configured in system-auth/password-auth (via authselect)."
   tags: ["cis","pam"]
+# --- Sysctl (IPv6/IPv4 defaults)
+- id: "CIS-3.3.2"
+  title: "IPv6 redirects disabled (default)"
+  category: "Services"
+  fact: "sysctl.net.ipv6.conf.default.accept_redirects"
+  expected: "0"
+  severity: "Medium"
+  remediation: "Set net.ipv6.conf.default.accept_redirects=0 and persist."
+  tags: ["cis","net"]
+
+- id: "CIS-3.3.4"
+  title: "IPv6 accept_ra disabled (default)"
+  category: "Services"
+  fact: "sysctl.net.ipv6.conf.default.accept_ra"
+  expected: "0"
+  severity: "Medium"
+  remediation: "Set net.ipv6.conf.default.accept_ra=0 and persist."
+  tags: ["cis","net"]
+
+- id: "CIS-3.3.6"
+  title: "IPv6 accept_source_route disabled (default)"
+  category: "Services"
+  fact: "sysctl.net.ipv6.conf.default.accept_source_route"
+  expected: "0"
+  severity: "Medium"
+  remediation: "Set net.ipv6.conf.default.accept_source_route=0 and persist."
+  tags: ["cis","net"]
+
+# --- Accounts / password policy (login.defs)
+- id: "CIS-5.4.2"
+  title: "PASS_MAX_DAYS <= 365"
+  category: "Auth"
+  fact: "login.defs.pass_max_days_ok"
+  expected: "true"
+  severity: "Medium"
+  remediation: "Set PASS_MAX_DAYS 365 (or lower) in /etc/login.defs."
+  tags: ["cis","accounts"]
+
+- id: "CIS-5.4.3"
+  title: "PASS_MIN_DAYS >= 1"
+  category: "Auth"
+  fact: "login.defs.pass_min_days_ok"
+  expected: "true"
+  severity: "Low"
+  remediation: "Set PASS_MIN_DAYS 1 (or higher) in /etc/login.defs."
+  tags: ["cis","accounts"]
+
+- id: "CIS-5.4.4"
+  title: "PASS_WARN_AGE >= 7"
+  category: "Auth"
+  fact: "login.defs.pass_warn_age_ok"
+  expected: "true"
+  severity: "Low"
+  remediation: "Set PASS_WARN_AGE 7 (or higher) in /etc/login.defs."
+  tags: ["cis","accounts"]
+
+# --- Account inactivity lock (defaults)
+- id: "CIS-5.4.5"
+  title: "Default INACTIVE <= 30 days"
+  category: "Auth"
+  fact: "useradd.inactive_ok"
+  expected: "true"
+  severity: "Medium"
+  remediation: "Set `useradd -D -f 30` to enforce default inactive lock."
+  tags: ["cis","accounts"]
 

@@ -77,6 +77,20 @@ func Evaluate(rule Rule) CheckResult {
 		val, err = PamPwhistoryPresent()
 	case "pam.faillock_present":
 		val, err = PamFaillockPresent()
+	case "sysctl.net.ipv6.conf.default.accept_redirects":
+		val, err = SysctlValueDefault("net.ipv6.conf.default.accept_redirects")
+	case "sysctl.net.ipv6.conf.default.accept_ra":
+		val, err = SysctlValueDefault("net.ipv6.conf.default.accept_ra")
+	case "sysctl.net.ipv6.conf.default.accept_source_route":
+		val, err = SysctlValueDefault("net.ipv6.conf.default.accept_source_route")
+	case "login.defs.pass_max_days_ok":
+		val, err = LoginDefsPassMaxDaysOK()
+	case "login.defs.pass_min_days_ok":
+		val, err = LoginDefsPassMinDaysOK()
+	case "login.defs.pass_warn_age_ok":
+		val, err = LoginDefsPassWarnAgeOK()
+	case "useradd.inactive_ok":
+		val, err = UseraddInactiveOK()
 
 	default:
 		val = "unknown"
