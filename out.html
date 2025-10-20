@@ -17,11 +17,11 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
 </style>
 
 <h1>RedCheck Report</h1>
-<div class="small">Host: KompanyArch &middot; Time: 2025-10-19T08:05:55Z</div>
+<div class="small">Host: KompanyArch &middot; Time: 2025-10-20T11:09:38Z</div>
 
 <div class="card">
   <h2>Score</h2>
-  <div>Global: <b>50.4</b></div>
+  <div>Global: <b>50.1</b></div>
   
     <div style="margin-top:8px">FS_Perms — 0.0
       <div class="bar"><div class="fill" style="width:0%"></div></div>
@@ -43,8 +43,8 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       <div class="bar"><div class="fill" style="width:30%"></div></div>
     </div>
   
-    <div style="margin-top:8px">Auth — 18.2
-      <div class="bar"><div class="fill" style="width:18%"></div></div>
+    <div style="margin-top:8px">Auth — 16.7
+      <div class="bar"><div class="fill" style="width:17%"></div></div>
     </div>
   
 </div>
@@ -341,6 +341,15 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
         <td><span class="badge fail">fail</span></td>
         <td class="small"><code>false</code> → <code>true</code></td>
         <td class="small">Set `useradd -D -f 30` to enforce default inactive lock.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.3.1-args</code></td>
+        <td>pwquality minlen &gt;= 14</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>false</code> → <code>true</code></td>
+        <td class="small">Set minlen=14 in pam_pwquality.</td>
       </tr>
       
     </tbody>

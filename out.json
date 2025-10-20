@@ -1,23 +1,11 @@
 {
   "host": {
     "hostname": "KompanyArch",
-    "time": "2025-10-19T08:05:55Z"
+    "time": "2025-10-20T11:09:38Z"
   },
   "scores": {
-    "global": 50.4,
+    "global": 50.1,
     "byCategory": [
-      {
-        "category": "Services",
-        "score": 30
-      },
-      {
-        "category": "Auth",
-        "score": 18.2
-      },
-      {
-        "category": "FS_Perms",
-        "score": 0
-      },
       {
         "category": "Audit",
         "score": 100
@@ -29,6 +17,18 @@
       {
         "category": "Privileges",
         "score": 85.7
+      },
+      {
+        "category": "Services",
+        "score": 30
+      },
+      {
+        "category": "Auth",
+        "score": 16.7
+      },
+      {
+        "category": "FS_Perms",
+        "score": 0
       }
     ]
   },
@@ -312,6 +312,16 @@
       "expected": "true",
       "severity": "Medium",
       "remediation": "Set `useradd -D -f 30` to enforce default inactive lock."
+    },
+    {
+      "id": "CIS-5.3.1-args",
+      "title": "pwquality minlen \u003e= 14",
+      "category": "Auth",
+      "status": "fail",
+      "observed": "false",
+      "expected": "true",
+      "severity": "Medium",
+      "remediation": "Set minlen=14 in pam_pwquality."
     }
   ]
 }

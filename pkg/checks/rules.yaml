@@ -251,4 +251,12 @@
   severity: "Medium"
   remediation: "Set `useradd -D -f 30` to enforce default inactive lock."
   tags: ["cis","accounts"]
+- id: "CIS-5.3.1-args"
+  title: "pwquality minlen >= 14"
+  category: "Auth"
+  fact: "pam.pwquality_minlen_ok"
+  expected: "true"
+  severity: "Medium"
+  remediation: "Set minlen=14 in pam_pwquality."
+  tags: ["cis","pam"]
 

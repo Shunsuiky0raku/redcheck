@@ -2,6 +2,7 @@
 package checks
 
 import "strings"
+import "strconv"
 
 type CheckResult struct {
 	ID          string `json:"id"`
@@ -92,6 +93,10 @@ func Evaluate(rule Rule) CheckResult {
 	case "useradd.inactive_ok":
 		val, err = UseraddInactiveOK()
 
+	case "pam.pwquality_minlen_ok":
+		v := PamPwqualityArgs()
+		val = boolToStr(atoi(v["minlen"]) >= 14)
+
 	default:
 		val = "unknown"
 	}
@@ -133,4 +138,14 @@ func firstNonEmpty(v ...string) string {
 		}
 	}
 	return ""
+}
+func atoi(s string) int {
+	n, _ := strconv.Atoi(strings.TrimSpace(s))
+	return n
+}
+func boolToStr(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
 }
