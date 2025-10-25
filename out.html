@@ -17,11 +17,11 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
 </style>
 
 <h1>RedCheck Report</h1>
-<div class="small">Host: KompanyArch &middot; Time: 2025-10-25T04:39:16Z</div>
+<div class="small">Host: KompanyArch &middot; Time: 2025-10-25T10:10:14Z</div>
 
 <div class="card">
   <h2>Score</h2>
-  <div>Global: <b>46.0</b></div>
+  <div>Global: <b>45.7</b></div>
   
     <div style="margin-top:8px">Privileges — 88.2
       <div class="bar"><div class="fill" style="width:88%"></div></div>
@@ -31,8 +31,8 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       <div class="bar"><div class="fill" style="width:36%"></div></div>
     </div>
   
-    <div style="margin-top:8px">Auth — 11.8
-      <div class="bar"><div class="fill" style="width:12%"></div></div>
+    <div style="margin-top:8px">Auth — 10.5
+      <div class="bar"><div class="fill" style="width:10%"></div></div>
     </div>
   
     <div style="margin-top:8px">FS_Perms — 0.0
@@ -92,21 +92,21 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
     <tbody>
       
       <tr>
-        <td><code>CIS-5.1.1</code></td>
-        <td>Disable root login over SSH</td>
-        <td>Auth</td>
-        <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>default</code> → <code>no</code></td>
-        <td class="small">Set &#39;PermitRootLogin no&#39; in /etc/ssh/sshd_config and reload sshd.</td>
-      </tr>
-      
-      <tr>
         <td><code>CIS-1.6.1</code></td>
         <td>Crypto policy not LEGACY</td>
         <td>Auth</td>
         <td><span class="badge fail">fail</span></td>
         <td class="small"><code>unknown</code> → <code>NOT_LEGACY</code></td>
         <td class="small">Use `update-crypto-policies --set DEFAULT` (or higher), avoid LEGACY.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-4.1.1</code></td>
+        <td>firewalld installed</td>
+        <td>Services</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>absent</code> → <code>present</code></td>
+        <td class="small">Install firewalld and enable the service.</td>
       </tr>
       
       <tr>
@@ -119,12 +119,21 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-4.1.1</code></td>
-        <td>firewalld installed</td>
-        <td>Services</td>
+        <td><code>CIS-5.1.1</code></td>
+        <td>Disable root login over SSH</td>
+        <td>Auth</td>
         <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>absent</code> → <code>present</code></td>
-        <td class="small">Install firewalld and enable the service.</td>
+        <td class="small"><code>default</code> → <code>no</code></td>
+        <td class="small">Set &#39;PermitRootLogin no&#39; in /etc/ssh/sshd_config and reload sshd.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.4.1</code></td>
+        <td>Only root has UID 0</td>
+        <td>Privileges</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>true</code> → <code>true</code></td>
+        <td class="small">Ensure only root has UID 0.</td>
       </tr>
       
       <tr>
@@ -155,39 +164,12 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-5.4.1</code></td>
-        <td>Only root has UID 0</td>
-        <td>Privileges</td>
-        <td><span class="badge pass">pass</span></td>
-        <td class="small"><code>true</code> → <code>true</code></td>
-        <td class="small">Ensure only root has UID 0.</td>
-      </tr>
-      
-      <tr>
-        <td><code>CIS-3.2.1</code></td>
-        <td>TCP SYN cookies enabled</td>
+        <td><code>CIS-3.3.5</code></td>
+        <td>IPv6 accept_source_route disabled (all)</td>
         <td>Services</td>
         <td><span class="badge pass">pass</span></td>
-        <td class="small"><code>1</code> → <code>1</code></td>
-        <td class="small">Set net.ipv4.tcp_syncookies=1 and persist.</td>
-      </tr>
-      
-      <tr>
-        <td><code>CIS-5.2.4</code></td>
-        <td>sudo timestamp_timeout is sane (&lt;=15)</td>
-        <td>Privileges</td>
-        <td><span class="badge pass">pass</span></td>
-        <td class="small"><code>true</code> → <code>true</code></td>
-        <td class="small">Set &#39;Defaults timestamp_timeout=15&#39; (or lower).</td>
-      </tr>
-      
-      <tr>
-        <td><code>CIS-3.3.1</code></td>
-        <td>IPv6 redirects disabled (all)</td>
-        <td>Services</td>
-        <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>1</code> → <code>0</code></td>
-        <td class="small">Set net.ipv6.conf.all.accept_redirects=0 and persist in sysctl.conf.</td>
+        <td class="small"><code>0</code> → <code>0</code></td>
+        <td class="small">Set net.ipv6.conf.all.accept_source_route=0 and persist.</td>
       </tr>
       
       <tr>
@@ -197,6 +179,15 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
         <td><span class="badge fail">fail</span></td>
         <td class="small"><code>1</code> → <code>0</code></td>
         <td class="small">Set net.ipv6.conf.all.accept_ra=0 and persist.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.2.4</code></td>
+        <td>sudo timestamp_timeout is sane (&lt;=15)</td>
+        <td>Privileges</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>true</code> → <code>true</code></td>
+        <td class="small">Set &#39;Defaults timestamp_timeout=15&#39; (or lower).</td>
       </tr>
       
       <tr>
@@ -236,12 +227,21 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-3.3.5</code></td>
-        <td>IPv6 accept_source_route disabled (all)</td>
+        <td><code>CIS-3.3.1</code></td>
+        <td>IPv6 redirects disabled (all)</td>
+        <td>Services</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>1</code> → <code>0</code></td>
+        <td class="small">Set net.ipv6.conf.all.accept_redirects=0 and persist in sysctl.conf.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-3.2.1</code></td>
+        <td>TCP SYN cookies enabled</td>
         <td>Services</td>
         <td><span class="badge pass">pass</span></td>
-        <td class="small"><code>0</code> → <code>0</code></td>
-        <td class="small">Set net.ipv6.conf.all.accept_source_route=0 and persist.</td>
+        <td class="small"><code>1</code> → <code>1</code></td>
+        <td class="small">Set net.ipv4.tcp_syncookies=1 and persist.</td>
       </tr>
       
       <tr>
@@ -335,30 +335,12 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-3.3.4</code></td>
-        <td>IPv6 accept_ra disabled (default)</td>
-        <td>Services</td>
-        <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>1</code> → <code>0</code></td>
-        <td class="small">Set net.ipv6.conf.default.accept_ra=0 and persist.</td>
-      </tr>
-      
-      <tr>
-        <td><code>CIS-3.3.2</code></td>
-        <td>IPv6 redirects disabled (default)</td>
-        <td>Services</td>
-        <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>1</code> → <code>0</code></td>
-        <td class="small">Set net.ipv6.conf.default.accept_redirects=0 and persist.</td>
-      </tr>
-      
-      <tr>
-        <td><code>CIS-1.1.2.2-tmp</code></td>
-        <td>/tmp mounted with nodev,nosuid,noexec</td>
+        <td><code>CIS-1.1.2.2-vartmp</code></td>
+        <td>/var/tmp mounted with nodev,nosuid,noexec</td>
         <td>FS_Perms</td>
-        <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>rw,nosuid,nodev,nr_inodes=1048576,inode64,usrquota</code> → <code>nodev,nosuid,noexec</code></td>
-        <td class="small">Ensure /tmp has nodev,nosuid,noexec (fstab or systemd tmp.mount).</td>
+        <td><span class="badge error">error</span></td>
+        <td class="small"><code></code> → <code>nodev,nosuid,noexec</code></td>
+        <td class="small">Ensure /var/tmp has nodev,nosuid,noexec.</td>
       </tr>
       
       <tr>
@@ -371,6 +353,15 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
+        <td><code>CIS-3.3.2</code></td>
+        <td>IPv6 redirects disabled (default)</td>
+        <td>Services</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>1</code> → <code>0</code></td>
+        <td class="small">Set net.ipv6.conf.default.accept_redirects=0 and persist.</td>
+      </tr>
+      
+      <tr>
         <td><code>CIS-3.3.6</code></td>
         <td>IPv6 accept_source_route disabled (default)</td>
         <td>Services</td>
@@ -380,21 +371,30 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-1.1.2.2-vartmp</code></td>
-        <td>/var/tmp mounted with nodev,nosuid,noexec</td>
+        <td><code>CIS-1.1.2.2-tmp</code></td>
+        <td>/tmp mounted with nodev,nosuid,noexec</td>
         <td>FS_Perms</td>
-        <td><span class="badge error">error</span></td>
-        <td class="small"><code></code> → <code>nodev,nosuid,noexec</code></td>
-        <td class="small">Ensure /var/tmp has nodev,nosuid,noexec.</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>rw,nosuid,nodev,nr_inodes=1048576,inode64,usrquota</code> → <code>nodev,nosuid,noexec</code></td>
+        <td class="small">Ensure /tmp has nodev,nosuid,noexec (fstab or systemd tmp.mount).</td>
       </tr>
       
       <tr>
-        <td><code>CIS-3.2.3</code></td>
-        <td>IPv4 redirects disabled (default)</td>
+        <td><code>CIS-3.3.4</code></td>
+        <td>IPv6 accept_ra disabled (default)</td>
         <td>Services</td>
         <td><span class="badge fail">fail</span></td>
         <td class="small"><code>1</code> → <code>0</code></td>
-        <td class="small">Set net.ipv4.conf.default.accept_redirects=0 and persist.</td>
+        <td class="small">Set net.ipv6.conf.default.accept_ra=0 and persist.</td>
+      </tr>
+      
+      <tr>
+        <td><code>RC-1.2</code></td>
+        <td>World-writable directories in PATH</td>
+        <td>Privileges</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>none</code> → <code>none</code></td>
+        <td class="small">Remove world-writable permissions from directories in $PATH.</td>
       </tr>
       
       <tr>
@@ -407,12 +407,30 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>RC-1.2</code></td>
-        <td>World-writable directories in PATH</td>
-        <td>Privileges</td>
-        <td><span class="badge pass">pass</span></td>
-        <td class="small"><code>none</code> → <code>none</code></td>
-        <td class="small">Remove world-writable permissions from directories in $PATH.</td>
+        <td><code>CIS-5.1.1</code></td>
+        <td>Disable root login over SSH</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>unknown</code> → <code>true</code></td>
+        <td class="small">Set &#39;PermitRootLogin no&#39; in /etc/ssh/sshd_config and reload sshd.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.1.14-ext</code></td>
+        <td>SSH Banner configured (external)</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>absent</code> → <code>present</code></td>
+        <td class="small">Set &#39;Banner /etc/issue.net&#39; and reload sshd.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-3.2.3</code></td>
+        <td>IPv4 redirects disabled (default)</td>
+        <td>Services</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>1</code> → <code>0</code></td>
+        <td class="small">Set net.ipv4.conf.default.accept_redirects=0 and persist.</td>
       </tr>
       
       <tr>

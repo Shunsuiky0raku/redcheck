@@ -1,0 +1,8 @@
+id: CIS-5.1.1
+title: Disable root login over SSH
+category: Auth
+fact: ssh.root_login_disabled
+expected: "true"
+severity: High
+remediation: Set 'PermitRootLogin no' in /etc/ssh/sshd_config and reload sshd.
+

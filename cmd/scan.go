@@ -8,6 +8,7 @@ import (
 	"github.com/Shunsuiky0raku/redcheck/pkg/scoring"
 	"github.com/spf13/cobra"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
@@ -23,6 +24,7 @@ var (
 	htmlOut     string
 	flagTimeout time.Duration
 	flagJobs    int
+	flagRules   string
 )
 
 var scanCmd = &cobra.Command{
@@ -40,6 +42,28 @@ var scanCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		builtIn := len(rs)
+		extra := 0
+		if flagRules != "" {
+			dir := flagRules
+			if !filepath.IsAbs(dir) {
+				if cwd, _ := os.Getwd(); cwd != "" {
+					dir = filepath.Join(cwd, dir)
+				}
+			}
+			if erules, err := checks.LoadRulesFromDir(dir); err == nil && len(erules) > 0 {
+				rs = append(rs, erules...)
+				extra = len(erules)
+			} else if err != nil {
+				fmt.Println("[warn] failed to load extra rules:", err)
+			}
+		}
+		fmt.Printf("Loaded %d built-in rules", builtIn)
+		if extra > 0 {
+			fmt.Printf(" + %d external rules", extra)
+		}
+		fmt.Println(".")
 
 		// 3) select rules (all == cis for now; we'll add tags/pe later)
 		sel := make([]checks.Rule, 0, len(rs))
@@ -201,5 +225,5 @@ func init() {
 	scanCmd.Flags().StringVar(&htmlOut, "html", "", "Write report to HTML file")
 	scanCmd.Flags().DurationVar(&flagTimeout, "timeout", 60*time.Second, "Per-check timeout (e.g., 60s, 2m)")
 	scanCmd.Flags().IntVar(&flagJobs, "jobs", 0, "Number of parallel workers (default: CPU count)")
-
+	scanCmd.Flags().StringVar(&flagRules, "rules", "", "Directory with extra rule files (*.yml, *.yaml)")
 }
