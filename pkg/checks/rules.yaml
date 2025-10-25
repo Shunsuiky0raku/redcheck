@@ -349,4 +349,22 @@
   severity: "Medium"
   remediation: "For each flagged user, adjust with 'chage' (MAX<=365, MIN>=1, INACTIVE<=30)."
   tags: ["cis","accounts"]
+# --- Recon / privilege escalation
+- id: "RC-1.1"
+  title: "Unexpected SUID/SGID files found"
+  category: "Recon"
+  fact: "recon.suid_sgid_unexpected"
+  expected: "none"
+  severity: "High"
+  remediation: "Review SUID/SGID files and remove from non-standard locations."
+  tags: ["recon","local","privilege"]
+
+- id: "RC-1.2"
+  title: "World-writable directories in PATH"
+  category: "Privileges"
+  fact: "recon.path_world_writable"
+  expected: "none"
+  severity: "High"
+  remediation: "Remove world-writable permissions from directories in $PATH."
+  tags: ["recon","privilege"]
 

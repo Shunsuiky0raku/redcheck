@@ -95,10 +95,16 @@ func Evaluate(rule Rule) CheckResult {
 	case "accounts.aging_policy_ok":
 		var obs string
 		val, obs, err = AccountsAgingPolicyOK()
-		// store offenders detail (if any) into Observed
+		// store offenders detail (if any) into Observed (only for this case)
 		if obs != "" {
 			res.Observed = obs
 		}
+
+	// Recon / privilege checks
+	case "recon.suid_sgid_unexpected":
+		val, err = ReconSuidSgidUnexpected()
+	case "recon.path_world_writable":
+		val, err = ReconPathWorldWritable()
 
 		// PAM args
 	case "pam.pwquality_minlen_ok":
