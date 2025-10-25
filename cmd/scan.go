@@ -2,15 +2,17 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"sort"
-	"time"
-
 	"github.com/Shunsuiky0raku/redcheck/pkg/checks"
 	htmlreport "github.com/Shunsuiky0raku/redcheck/pkg/report/html"
 	jsonreport "github.com/Shunsuiky0raku/redcheck/pkg/report/json"
 	"github.com/Shunsuiky0raku/redcheck/pkg/scoring"
 	"github.com/spf13/cobra"
+	"os"
+	"runtime"
+	"sort"
+	"strings"
+	"sync"
+	"time"
 )
 
 var (
@@ -20,6 +22,7 @@ var (
 	jsonOut     string
 	htmlOut     string
 	flagTimeout time.Duration
+	flagJobs    int
 )
 
 var scanCmd = &cobra.Command{
@@ -47,13 +50,44 @@ var scanCmd = &cobra.Command{
 		}
 
 		// 4) evaluate
-		results := make([]checks.CheckResult, 0, len(sel))
-		for _, r := range sel {
-			results = append(results, checks.Evaluate(r))
+		// -------- 4) evaluate (concurrent with per-check timeout) --------
+		if flagJobs <= 0 {
+			flagJobs = runtime.NumCPU()
 		}
+		type job struct{ r checks.Rule }
+		type out struct{ cr checks.CheckResult }
+
+		jobs := make(chan job)
+		outs := make(chan out)
+		var wg sync.WaitGroup
+
+		worker := func() {
+			defer wg.Done()
+			for j := range jobs {
+				outs <- out{cr: evalWithTimeout(j.r, flagTimeout)}
+			}
+		}
+
+		for i := 0; i < flagJobs; i++ {
+			wg.Add(1)
+			go worker()
+		}
+		go func() {
+			for _, r := range sel {
+				jobs <- job{r: r}
+			}
+			close(jobs)
+		}()
+		go func() { wg.Wait(); close(outs) }()
+
+		results := make([]checks.CheckResult, 0, len(sel))
+		for o := range outs {
+			results = append(results, o.cr)
+		}
+
 		fmt.Printf("Evaluated %d rules.\n", len(results))
-		fmt.Printf("Starting scan… (all=%v, cis=%v, pe=%v, timeout=%s)\n",
-			flagAll, flagCIS, flagPE, flagTimeout)
+		fmt.Printf("Starting scan… (all=%v, cis=%v, pe=%v, timeout=%s, jobs=%d)\n",
+			flagAll, flagCIS, flagPE, flagTimeout, flagJobs)
 
 		// 5) compute scores (for terminal + HTML)
 		resIface := make([]scoring.Result, len(results))
@@ -121,6 +155,43 @@ var scanCmd = &cobra.Command{
 	},
 }
 
+// evalWithTimeout runs a single rule with a soft timeout.
+// If it times out, we return an error-style CheckResult with Observed="timeout".
+func evalWithTimeout(r checks.Rule, d time.Duration) checks.CheckResult {
+	if d <= 0 {
+		return checks.Evaluate(r)
+	}
+	ch := make(chan checks.CheckResult, 1)
+	go func() { ch <- checks.Evaluate(r) }()
+	select {
+	case res := <-ch:
+		return res
+	case <-time.After(d):
+		// fabricate a timeout result
+		return checks.CheckResult{
+			ID:          r.ID,
+			Title:       r.Title,
+			Category:    r.Category,
+			Status:      "error",
+			Observed:    "timeout",
+			Expected:    firstExpected(r), // tiny helper below
+			Severity:    r.Severity,
+			Remediation: r.Remediation,
+		}
+	}
+}
+
+// firstExpected joins Expected/ExpectedAll to show something meaningful on timeout.
+func firstExpected(r checks.Rule) string {
+	if r.Expected != "" {
+		return r.Expected
+	}
+	if len(r.ExpectedAll) > 0 {
+		return strings.Join(r.ExpectedAll, ",")
+	}
+	return ""
+}
+
 func init() {
 	rootCmd.AddCommand(scanCmd)
 	scanCmd.Flags().BoolVar(&flagAll, "all", false, "Run all checks (default if none specified)")
@@ -129,4 +200,6 @@ func init() {
 	scanCmd.Flags().StringVar(&jsonOut, "json", "", "Write results to JSON file")
 	scanCmd.Flags().StringVar(&htmlOut, "html", "", "Write report to HTML file")
 	scanCmd.Flags().DurationVar(&flagTimeout, "timeout", 60*time.Second, "Per-check timeout (e.g., 60s, 2m)")
+	scanCmd.Flags().IntVar(&flagJobs, "jobs", 0, "Number of parallel workers (default: CPU count)")
+
 }

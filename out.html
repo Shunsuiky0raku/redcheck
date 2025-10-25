@@ -17,11 +17,15 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
 </style>
 
 <h1>RedCheck Report</h1>
-<div class="small">Host: KompanyArch &middot; Time: 2025-10-20T13:12:41Z</div>
+<div class="small">Host: KompanyArch &middot; Time: 2025-10-25T03:39:50Z</div>
 
 <div class="card">
   <h2>Score</h2>
   <div>Global: <b>50.2</b></div>
+  
+    <div style="margin-top:8px">Recon — 100.0
+      <div class="bar"><div class="fill" style="width:100%"></div></div>
+    </div>
   
     <div style="margin-top:8px">Privileges — 85.7
       <div class="bar"><div class="fill" style="width:86%"></div></div>
@@ -40,10 +44,6 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
     </div>
   
     <div style="margin-top:8px">Audit — 100.0
-      <div class="bar"><div class="fill" style="width:100%"></div></div>
-    </div>
-  
-    <div style="margin-top:8px">Recon — 100.0
       <div class="bar"><div class="fill" style="width:100%"></div></div>
     </div>
   
@@ -92,33 +92,6 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
     <tbody>
       
       <tr>
-        <td><code>CIS-5.1.1</code></td>
-        <td>Disable root login over SSH</td>
-        <td>Auth</td>
-        <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>default</code> → <code>no</code></td>
-        <td class="small">Set &#39;PermitRootLogin no&#39; in /etc/ssh/sshd_config and reload sshd.</td>
-      </tr>
-      
-      <tr>
-        <td><code>CIS-1.1.2.2-devshm</code></td>
-        <td>/dev/shm mounted with nodev,nosuid,noexec</td>
-        <td>FS_Perms</td>
-        <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>rw,nosuid,nodev,inode64,usrquota</code> → <code>nodev,nosuid,noexec</code></td>
-        <td class="small">Ensure /dev/shm has nodev,nosuid,noexec (fstab or systemd mount).</td>
-      </tr>
-      
-      <tr>
-        <td><code>CIS-3.3.1</code></td>
-        <td>IPv6 redirects disabled (all)</td>
-        <td>Services</td>
-        <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>1</code> → <code>0</code></td>
-        <td class="small">Set net.ipv6.conf.all.accept_redirects=0 and persist in sysctl.conf.</td>
-      </tr>
-      
-      <tr>
         <td><code>CIS-4.1.1</code></td>
         <td>firewalld installed</td>
         <td>Services</td>
@@ -128,12 +101,12 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-4.1.2</code></td>
-        <td>firewalld enabled and active</td>
-        <td>Services</td>
+        <td><code>CIS-5.1.1</code></td>
+        <td>Disable root login over SSH</td>
+        <td>Auth</td>
         <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>disabled_inactive</code> → <code>enabled_active</code></td>
-        <td class="small">systemctl enable --now firewalld</td>
+        <td class="small"><code>default</code> → <code>no</code></td>
+        <td class="small">Set &#39;PermitRootLogin no&#39; in /etc/ssh/sshd_config and reload sshd.</td>
       </tr>
       
       <tr>
@@ -146,12 +119,12 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-1.1.2.2-tmp</code></td>
-        <td>/tmp mounted with nodev,nosuid,noexec</td>
-        <td>FS_Perms</td>
+        <td><code>CIS-3.3.1</code></td>
+        <td>IPv6 redirects disabled (all)</td>
+        <td>Services</td>
         <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>rw,nosuid,nodev,nr_inodes=1048576,inode64,usrquota</code> → <code>nodev,nosuid,noexec</code></td>
-        <td class="small">Ensure /tmp has nodev,nosuid,noexec (fstab or systemd tmp.mount).</td>
+        <td class="small"><code>1</code> → <code>0</code></td>
+        <td class="small">Set net.ipv6.conf.all.accept_redirects=0 and persist in sysctl.conf.</td>
       </tr>
       
       <tr>
@@ -173,12 +146,30 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
+        <td><code>CIS-1.1.2.2-devshm</code></td>
+        <td>/dev/shm mounted with nodev,nosuid,noexec</td>
+        <td>FS_Perms</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>rw,nosuid,nodev,inode64,usrquota</code> → <code>nodev,nosuid,noexec</code></td>
+        <td class="small">Ensure /dev/shm has nodev,nosuid,noexec (fstab or systemd mount).</td>
+      </tr>
+      
+      <tr>
         <td><code>CIS-5.2.3</code></td>
         <td>sudo has logfile</td>
         <td>Privileges</td>
         <td><span class="badge fail">fail</span></td>
         <td class="small"><code>false</code> → <code>true</code></td>
         <td class="small">Add &#39;Defaults logfile=&#34;/var/log/sudo.log&#34;&#39; in sudoers.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-1.1.2.2-tmp</code></td>
+        <td>/tmp mounted with nodev,nosuid,noexec</td>
+        <td>FS_Perms</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>rw,nosuid,nodev,nr_inodes=1048576,inode64,usrquota</code> → <code>nodev,nosuid,noexec</code></td>
+        <td class="small">Ensure /tmp has nodev,nosuid,noexec (fstab or systemd tmp.mount).</td>
       </tr>
       
       <tr>
@@ -191,15 +182,6 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-5.1.6</code></td>
-        <td>X11Forwarding disabled</td>
-        <td>Auth</td>
-        <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>default</code> → <code>no</code></td>
-        <td class="small">Set &#39;X11Forwarding no&#39; in /etc/ssh/sshd_config and reload sshd.</td>
-      </tr>
-      
-      <tr>
         <td><code>CIS-5.1.14</code></td>
         <td>SSH Banner configured</td>
         <td>Auth</td>
@@ -209,12 +191,12 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-3.3.3</code></td>
-        <td>IPv6 accept_ra disabled (all)</td>
-        <td>Services</td>
+        <td><code>CIS-5.1.6</code></td>
+        <td>X11Forwarding disabled</td>
+        <td>Auth</td>
         <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>1</code> → <code>0</code></td>
-        <td class="small">Set net.ipv6.conf.all.accept_ra=0 and persist.</td>
+        <td class="small"><code>default</code> → <code>no</code></td>
+        <td class="small">Set &#39;X11Forwarding no&#39; in /etc/ssh/sshd_config and reload sshd.</td>
       </tr>
       
       <tr>
@@ -227,12 +209,12 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-3.2.1</code></td>
-        <td>TCP SYN cookies enabled</td>
+        <td><code>CIS-3.3.3</code></td>
+        <td>IPv6 accept_ra disabled (all)</td>
         <td>Services</td>
-        <td><span class="badge pass">pass</span></td>
-        <td class="small"><code>1</code> → <code>1</code></td>
-        <td class="small">Set net.ipv4.tcp_syncookies=1 and persist.</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>1</code> → <code>0</code></td>
+        <td class="small">Set net.ipv6.conf.all.accept_ra=0 and persist.</td>
       </tr>
       
       <tr>
@@ -245,12 +227,12 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-5.2.5</code></td>
-        <td>No NOPASSWD wildcards in sudoers</td>
-        <td>Privileges</td>
+        <td><code>CIS-3.2.1</code></td>
+        <td>TCP SYN cookies enabled</td>
+        <td>Services</td>
         <td><span class="badge pass">pass</span></td>
-        <td class="small"><code>true</code> → <code>true</code></td>
-        <td class="small">Remove &#39;NOPASSWD&#39; with wildcard commands; require authentication.</td>
+        <td class="small"><code>1</code> → <code>1</code></td>
+        <td class="small">Set net.ipv4.tcp_syncookies=1 and persist.</td>
       </tr>
       
       <tr>
@@ -281,12 +263,12 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-3.3.2</code></td>
-        <td>IPv6 redirects disabled (default)</td>
-        <td>Services</td>
-        <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>1</code> → <code>0</code></td>
-        <td class="small">Set net.ipv6.conf.default.accept_redirects=0 and persist.</td>
+        <td><code>CIS-5.2.5</code></td>
+        <td>No NOPASSWD wildcards in sudoers</td>
+        <td>Privileges</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>true</code> → <code>true</code></td>
+        <td class="small">Remove &#39;NOPASSWD&#39; with wildcard commands; require authentication.</td>
       </tr>
       
       <tr>
@@ -353,21 +335,21 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-5.3.1-minlen</code></td>
-        <td>pwquality minlen &gt;= 14</td>
-        <td>Auth</td>
-        <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>false</code> → <code>true</code></td>
-        <td class="small">In pam_pwquality.so line(s), set minlen=14 or higher.</td>
-      </tr>
-      
-      <tr>
         <td><code>CIS-5.3.1-retry</code></td>
         <td>pwquality retry &lt;= 3</td>
         <td>Auth</td>
         <td><span class="badge fail">fail</span></td>
         <td class="small"><code>false</code> → <code>true</code></td>
         <td class="small">In pam_pwquality.so line(s), set retry=3 or lower.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-5.3.1-minlen</code></td>
+        <td>pwquality minlen &gt;= 14</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>false</code> → <code>true</code></td>
+        <td class="small">In pam_pwquality.so line(s), set minlen=14 or higher.</td>
       </tr>
       
       <tr>
@@ -380,6 +362,15 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
+        <td><code>CIS-5.3.3-fail-unlock</code></td>
+        <td>faillock unlock_time &gt;= 900</td>
+        <td>Auth</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>false</code> → <code>true</code></td>
+        <td class="small">In pam_faillock.so line(s), set unlock_time=900 or higher.</td>
+      </tr>
+      
+      <tr>
         <td><code>CIS-5.3.3-fail-deny</code></td>
         <td>faillock deny &lt;= 5</td>
         <td>Auth</td>
@@ -389,12 +380,21 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-5.3.3-fail-unlock</code></td>
-        <td>faillock unlock_time &gt;= 900</td>
-        <td>Auth</td>
+        <td><code>CIS-3.3.2</code></td>
+        <td>IPv6 redirects disabled (default)</td>
+        <td>Services</td>
         <td><span class="badge fail">fail</span></td>
-        <td class="small"><code>false</code> → <code>true</code></td>
-        <td class="small">In pam_faillock.so line(s), set unlock_time=900 or higher.</td>
+        <td class="small"><code>1</code> → <code>0</code></td>
+        <td class="small">Set net.ipv6.conf.default.accept_redirects=0 and persist.</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-3.2.4</code></td>
+        <td>IPv4 accept_source_route disabled (all)</td>
+        <td>Services</td>
+        <td><span class="badge pass">pass</span></td>
+        <td class="small"><code>0</code> → <code>0</code></td>
+        <td class="small">Set net.ipv4.conf.all.accept_source_route=0 and persist.</td>
       </tr>
       
       <tr>
@@ -416,15 +416,6 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
       </tr>
       
       <tr>
-        <td><code>CIS-3.2.4</code></td>
-        <td>IPv4 accept_source_route disabled (all)</td>
-        <td>Services</td>
-        <td><span class="badge pass">pass</span></td>
-        <td class="small"><code>0</code> → <code>0</code></td>
-        <td class="small">Set net.ipv4.conf.all.accept_source_route=0 and persist.</td>
-      </tr>
-      
-      <tr>
         <td><code>CIS-3.2.5</code></td>
         <td>IPv4 accept_source_route disabled (default)</td>
         <td>Services</td>
@@ -440,6 +431,15 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
         <td><span class="badge fail">fail</span></td>
         <td class="small"><code>false</code> → <code>true</code></td>
         <td class="small">For each flagged user, adjust with &#39;chage&#39; (MAX&lt;=365, MIN&gt;=1, INACTIVE&lt;=30).</td>
+      </tr>
+      
+      <tr>
+        <td><code>CIS-4.1.2</code></td>
+        <td>firewalld enabled and active</td>
+        <td>Services</td>
+        <td><span class="badge fail">fail</span></td>
+        <td class="small"><code>disabled_inactive</code> → <code>enabled_active</code></td>
+        <td class="small">systemctl enable --now firewalld</td>
       </tr>
       
     </tbody>

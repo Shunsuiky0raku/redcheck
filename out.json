@@ -1,15 +1,11 @@
 {
   "host": {
     "hostname": "KompanyArch",
-    "time": "2025-10-20T13:12:41Z"
+    "time": "2025-10-25T03:39:50Z"
   },
   "scores": {
     "global": 50.2,
     "byCategory": [
-      {
-        "category": "Audit",
-        "score": 100
-      },
       {
         "category": "Recon",
         "score": 100
@@ -29,40 +25,14 @@
       {
         "category": "FS_Perms",
         "score": 0
+      },
+      {
+        "category": "Audit",
+        "score": 100
       }
     ]
   },
   "results": [
-    {
-      "id": "CIS-5.1.1",
-      "title": "Disable root login over SSH",
-      "category": "Auth",
-      "status": "fail",
-      "observed": "default",
-      "expected": "no",
-      "severity": "High",
-      "remediation": "Set 'PermitRootLogin no' in /etc/ssh/sshd_config and reload sshd."
-    },
-    {
-      "id": "CIS-1.1.2.2-devshm",
-      "title": "/dev/shm mounted with nodev,nosuid,noexec",
-      "category": "FS_Perms",
-      "status": "fail",
-      "observed": "rw,nosuid,nodev,inode64,usrquota",
-      "expected": "nodev,nosuid,noexec",
-      "severity": "High",
-      "remediation": "Ensure /dev/shm has nodev,nosuid,noexec (fstab or systemd mount)."
-    },
-    {
-      "id": "CIS-3.3.1",
-      "title": "IPv6 redirects disabled (all)",
-      "category": "Services",
-      "status": "fail",
-      "observed": "1",
-      "expected": "0",
-      "severity": "Medium",
-      "remediation": "Set net.ipv6.conf.all.accept_redirects=0 and persist in sysctl.conf."
-    },
     {
       "id": "CIS-4.1.1",
       "title": "firewalld installed",
@@ -74,14 +44,14 @@
       "remediation": "Install firewalld and enable the service."
     },
     {
-      "id": "CIS-4.1.2",
-      "title": "firewalld enabled and active",
-      "category": "Services",
+      "id": "CIS-5.1.1",
+      "title": "Disable root login over SSH",
+      "category": "Auth",
       "status": "fail",
-      "observed": "disabled_inactive",
-      "expected": "enabled_active",
+      "observed": "default",
+      "expected": "no",
       "severity": "High",
-      "remediation": "systemctl enable --now firewalld"
+      "remediation": "Set 'PermitRootLogin no' in /etc/ssh/sshd_config and reload sshd."
     },
     {
       "id": "CIS-1.6.1",
@@ -94,14 +64,14 @@
       "remediation": "Use `update-crypto-policies --set DEFAULT` (or higher), avoid LEGACY."
     },
     {
-      "id": "CIS-1.1.2.2-tmp",
-      "title": "/tmp mounted with nodev,nosuid,noexec",
-      "category": "FS_Perms",
+      "id": "CIS-3.3.1",
+      "title": "IPv6 redirects disabled (all)",
+      "category": "Services",
       "status": "fail",
-      "observed": "rw,nosuid,nodev,nr_inodes=1048576,inode64,usrquota",
-      "expected": "nodev,nosuid,noexec",
-      "severity": "High",
-      "remediation": "Ensure /tmp has nodev,nosuid,noexec (fstab or systemd tmp.mount)."
+      "observed": "1",
+      "expected": "0",
+      "severity": "Medium",
+      "remediation": "Set net.ipv6.conf.all.accept_redirects=0 and persist in sysctl.conf."
     },
     {
       "id": "CIS-1.1.2.2-vartmp",
@@ -124,6 +94,16 @@
       "remediation": "Add 'Defaults use_pty' in sudoers."
     },
     {
+      "id": "CIS-1.1.2.2-devshm",
+      "title": "/dev/shm mounted with nodev,nosuid,noexec",
+      "category": "FS_Perms",
+      "status": "fail",
+      "observed": "rw,nosuid,nodev,inode64,usrquota",
+      "expected": "nodev,nosuid,noexec",
+      "severity": "High",
+      "remediation": "Ensure /dev/shm has nodev,nosuid,noexec (fstab or systemd mount)."
+    },
+    {
       "id": "CIS-5.2.3",
       "title": "sudo has logfile",
       "category": "Privileges",
@@ -132,6 +112,16 @@
       "expected": "true",
       "severity": "Medium",
       "remediation": "Add 'Defaults logfile=\"/var/log/sudo.log\"' in sudoers."
+    },
+    {
+      "id": "CIS-1.1.2.2-tmp",
+      "title": "/tmp mounted with nodev,nosuid,noexec",
+      "category": "FS_Perms",
+      "status": "fail",
+      "observed": "rw,nosuid,nodev,nr_inodes=1048576,inode64,usrquota",
+      "expected": "nodev,nosuid,noexec",
+      "severity": "High",
+      "remediation": "Ensure /tmp has nodev,nosuid,noexec (fstab or systemd tmp.mount)."
     },
     {
       "id": "CIS-5.4.1",
@@ -144,16 +134,6 @@
       "remediation": "Ensure only root has UID 0."
     },
     {
-      "id": "CIS-5.1.6",
-      "title": "X11Forwarding disabled",
-      "category": "Auth",
-      "status": "fail",
-      "observed": "default",
-      "expected": "no",
-      "severity": "Low",
-      "remediation": "Set 'X11Forwarding no' in /etc/ssh/sshd_config and reload sshd."
-    },
-    {
       "id": "CIS-5.1.14",
       "title": "SSH Banner configured",
       "category": "Auth",
@@ -164,14 +144,14 @@
       "remediation": "Set 'Banner /etc/issue.net' (or similar) and reload sshd."
     },
     {
-      "id": "CIS-3.3.3",
-      "title": "IPv6 accept_ra disabled (all)",
-      "category": "Services",
+      "id": "CIS-5.1.6",
+      "title": "X11Forwarding disabled",
+      "category": "Auth",
       "status": "fail",
-      "observed": "1",
-      "expected": "0",
-      "severity": "Medium",
-      "remediation": "Set net.ipv6.conf.all.accept_ra=0 and persist."
+      "observed": "default",
+      "expected": "no",
+      "severity": "Low",
+      "remediation": "Set 'X11Forwarding no' in /etc/ssh/sshd_config and reload sshd."
     },
     {
       "id": "CIS-3.3.5",
@@ -184,14 +164,14 @@
       "remediation": "Set net.ipv6.conf.all.accept_source_route=0 and persist."
     },
     {
-      "id": "CIS-3.2.1",
-      "title": "TCP SYN cookies enabled",
+      "id": "CIS-3.3.3",
+      "title": "IPv6 accept_ra disabled (all)",
       "category": "Services",
-      "status": "pass",
+      "status": "fail",
       "observed": "1",
-      "expected": "1",
+      "expected": "0",
       "severity": "Medium",
-      "remediation": "Set net.ipv4.tcp_syncookies=1 and persist."
+      "remediation": "Set net.ipv6.conf.all.accept_ra=0 and persist."
     },
     {
       "id": "CIS-5.2.4",
@@ -204,14 +184,14 @@
       "remediation": "Set 'Defaults timestamp_timeout=15' (or lower)."
     },
     {
-      "id": "CIS-5.2.5",
-      "title": "No NOPASSWD wildcards in sudoers",
-      "category": "Privileges",
+      "id": "CIS-3.2.1",
+      "title": "TCP SYN cookies enabled",
+      "category": "Services",
       "status": "pass",
-      "observed": "true",
-      "expected": "true",
-      "severity": "High",
-      "remediation": "Remove 'NOPASSWD' with wildcard commands; require authentication."
+      "observed": "1",
+      "expected": "1",
+      "severity": "Medium",
+      "remediation": "Set net.ipv4.tcp_syncookies=1 and persist."
     },
     {
       "id": "CIS-5.3.1",
@@ -244,14 +224,14 @@
       "remediation": "Ensure pam_faillock.so is configured in system-auth/password-auth (via authselect)."
     },
     {
-      "id": "CIS-3.3.2",
-      "title": "IPv6 redirects disabled (default)",
-      "category": "Services",
-      "status": "fail",
-      "observed": "1",
-      "expected": "0",
-      "severity": "Medium",
-      "remediation": "Set net.ipv6.conf.default.accept_redirects=0 and persist."
+      "id": "CIS-5.2.5",
+      "title": "No NOPASSWD wildcards in sudoers",
+      "category": "Privileges",
+      "status": "pass",
+      "observed": "true",
+      "expected": "true",
+      "severity": "High",
+      "remediation": "Remove 'NOPASSWD' with wildcard commands; require authentication."
     },
     {
       "id": "CIS-3.3.4",
@@ -324,16 +304,6 @@
       "remediation": "Set minlen=14 in pam_pwquality."
     },
     {
-      "id": "CIS-5.3.1-minlen",
-      "title": "pwquality minlen \u003e= 14",
-      "category": "Auth",
-      "status": "fail",
-      "observed": "false",
-      "expected": "true",
-      "severity": "Medium",
-      "remediation": "In pam_pwquality.so line(s), set minlen=14 or higher."
-    },
-    {
       "id": "CIS-5.3.1-retry",
       "title": "pwquality retry \u003c= 3",
       "category": "Auth",
@@ -342,6 +312,16 @@
       "expected": "true",
       "severity": "Low",
       "remediation": "In pam_pwquality.so line(s), set retry=3 or lower."
+    },
+    {
+      "id": "CIS-5.3.1-minlen",
+      "title": "pwquality minlen \u003e= 14",
+      "category": "Auth",
+      "status": "fail",
+      "observed": "false",
+      "expected": "true",
+      "severity": "Medium",
+      "remediation": "In pam_pwquality.so line(s), set minlen=14 or higher."
     },
     {
       "id": "CIS-5.3.2-remember",
@@ -354,6 +334,16 @@
       "remediation": "In pam_pwhistory.so line(s), set remember=5 or higher."
     },
     {
+      "id": "CIS-5.3.3-fail-unlock",
+      "title": "faillock unlock_time \u003e= 900",
+      "category": "Auth",
+      "status": "fail",
+      "observed": "false",
+      "expected": "true",
+      "severity": "Low",
+      "remediation": "In pam_faillock.so line(s), set unlock_time=900 or higher."
+    },
+    {
       "id": "CIS-5.3.3-fail-deny",
       "title": "faillock deny \u003c= 5",
       "category": "Auth",
@@ -364,14 +354,24 @@
       "remediation": "In pam_faillock.so line(s), set deny=5 or lower."
     },
     {
-      "id": "CIS-5.3.3-fail-unlock",
-      "title": "faillock unlock_time \u003e= 900",
-      "category": "Auth",
+      "id": "CIS-3.3.2",
+      "title": "IPv6 redirects disabled (default)",
+      "category": "Services",
       "status": "fail",
-      "observed": "false",
-      "expected": "true",
-      "severity": "Low",
-      "remediation": "In pam_faillock.so line(s), set unlock_time=900 or higher."
+      "observed": "1",
+      "expected": "0",
+      "severity": "Medium",
+      "remediation": "Set net.ipv6.conf.default.accept_redirects=0 and persist."
+    },
+    {
+      "id": "CIS-3.2.4",
+      "title": "IPv4 accept_source_route disabled (all)",
+      "category": "Services",
+      "status": "pass",
+      "observed": "0",
+      "expected": "0",
+      "severity": "Medium",
+      "remediation": "Set net.ipv4.conf.all.accept_source_route=0 and persist."
     },
     {
       "id": "CIS-3.2.2",
@@ -394,16 +394,6 @@
       "remediation": "Set net.ipv4.conf.default.accept_redirects=0 and persist."
     },
     {
-      "id": "CIS-3.2.4",
-      "title": "IPv4 accept_source_route disabled (all)",
-      "category": "Services",
-      "status": "pass",
-      "observed": "0",
-      "expected": "0",
-      "severity": "Medium",
-      "remediation": "Set net.ipv4.conf.all.accept_source_route=0 and persist."
-    },
-    {
       "id": "CIS-3.2.5",
       "title": "IPv4 accept_source_route disabled (default)",
       "category": "Services",
@@ -422,6 +412,16 @@
       "expected": "true",
       "severity": "Medium",
       "remediation": "For each flagged user, adjust with 'chage' (MAX\u003c=365, MIN\u003e=1, INACTIVE\u003c=30)."
+    },
+    {
+      "id": "CIS-4.1.2",
+      "title": "firewalld enabled and active",
+      "category": "Services",
+      "status": "fail",
+      "observed": "disabled_inactive",
+      "expected": "enabled_active",
+      "severity": "High",
+      "remediation": "systemctl enable --now firewalld"
     }
   ]
 }
