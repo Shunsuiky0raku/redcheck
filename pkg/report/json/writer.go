@@ -5,11 +5,17 @@ import (
 	"os"
 	"time"
 
+	"github.com/Shunsuiky0raku/redcheck/cmd"
 	"github.com/Shunsuiky0raku/redcheck/pkg/checks"
 	"github.com/Shunsuiky0raku/redcheck/pkg/scoring"
 )
 
 type Report struct {
+	Meta struct {
+		Version   string `json:"version"`
+		Commit    string `json:"commit"`
+		BuildDate string `json:"build_date"`
+	} `json:"meta"`
 	Host struct {
 		Hostname string `json:"hostname"`
 		Time     string `json:"time"`
@@ -20,11 +26,19 @@ type Report struct {
 
 func Write(path string, results []checks.CheckResult) error {
 	var r Report
+
+	// meta
+	r.Meta.Version = cmd.BuildVersion
+	r.Meta.Commit = cmd.BuildCommit
+	r.Meta.BuildDate = cmd.BuildDate
+
+	// host
 	r.Host.Time = time.Now().UTC().Format(time.RFC3339)
 	if h, err := os.Hostname(); err == nil {
 		r.Host.Hostname = h
 	}
-	// compute scores
+
+	// scores
 	resIface := make([]scoring.Result, len(results))
 	for i := range results {
 		resIface[i] = results[i]
@@ -38,3 +52,4 @@ func Write(path string, results []checks.CheckResult) error {
 	}
 	return os.WriteFile(path, b, 0644)
 }
+
