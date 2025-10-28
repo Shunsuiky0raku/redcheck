@@ -3,9 +3,7 @@ package jsonreport
 import (
 	"encoding/json"
 	"os"
-	"time"
 
-	"github.com/Shunsuiky0raku/redcheck/cmd"
 	"github.com/Shunsuiky0raku/redcheck/pkg/checks"
 	"github.com/Shunsuiky0raku/redcheck/pkg/scoring"
 )
@@ -24,20 +22,20 @@ type Report struct {
 	Results []checks.CheckResult `json:"results"`
 }
 
-func Write(path string, results []checks.CheckResult) error {
+func Write(
+	path string,
+	results []checks.CheckResult,
+	hostname, tstamp string,
+	version, commit, buildDate string,
+) error {
 	var r Report
-
 	// meta
-	r.Meta.Version = cmd.BuildVersion
-	r.Meta.Commit = cmd.BuildCommit
-	r.Meta.BuildDate = cmd.BuildDate
-
+	r.Meta.Version = version
+	r.Meta.Commit = commit
+	r.Meta.BuildDate = buildDate
 	// host
-	r.Host.Time = time.Now().UTC().Format(time.RFC3339)
-	if h, err := os.Hostname(); err == nil {
-		r.Host.Hostname = h
-	}
-
+	r.Host.Hostname = hostname
+	r.Host.Time = tstamp
 	// scores
 	resIface := make([]scoring.Result, len(results))
 	for i := range results {
@@ -52,4 +50,3 @@ func Write(path string, results []checks.CheckResult) error {
 	}
 	return os.WriteFile(path, b, 0644)
 }
-

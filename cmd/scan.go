@@ -156,20 +156,32 @@ var scanCmd = &cobra.Command{
 		} else {
 			fmt.Println("\nNo failed checks 🎉")
 		}
+		// capture host + time for the reports
+		h := "unknown"
+		if hv, err := os.Hostname(); err == nil {
+			h = hv
+		}
+		ts := time.Now().UTC().Format(time.RFC3339)
 
 		// 7) write JSON (optional)
+		// JSON
 		if jsonOut != "" {
-			if err := jsonreport.Write(jsonOut, results); err != nil {
+			if err := jsonreport.Write(
+				jsonOut, results, h, ts,
+				BuildVersion, BuildCommit, BuildDate,
+			); err != nil {
 				return err
 			}
 			fmt.Println("JSON written to:", jsonOut)
 		}
 
-		// 8) write HTML (optional)
+		// HTML
 		if htmlOut != "" {
-			h, _ := os.Hostname()
-			ts := time.Now().UTC().Format(time.RFC3339)
-			if err := htmlreport.Write(htmlOut, h, ts, scores, results); err != nil {
+			if err := htmlreport.Write(
+				htmlOut, h, ts, scores, results,
+				builtIn, extra, flagJobs, flagTimeout.String(), os.Geteuid() == 0,
+				BuildVersion, BuildCommit, BuildDate,
+			); err != nil {
 				return err
 			}
 			fmt.Println("HTML written to:", htmlOut)
