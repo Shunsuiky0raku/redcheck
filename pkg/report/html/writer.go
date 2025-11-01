@@ -31,8 +31,29 @@ const tpl = `<!doctype html>
 <style>
 /* (styles unchanged) */
 </style>
+	<script>
+function copyFixes(){
+  // grab ALL remediation cells (we’ll tag them with class "rem")
+  const items = Array.from(document.querySelectorAll('td.rem')).map(td => td.innerText.trim());
+  // keep only non-empty & unique
+  const seen = new Set();
+  const cmds = items.filter(x => x).filter(x => (seen.has(x) ? false : seen.add(x)));
+  if (cmds.length === 0) { alert('No remediation commands to copy.'); return; }
+  navigator.clipboard.writeText(cmds.join('\n')).then(
+    () => alert('All remediations copied to clipboard.'),
+    () => alert('Copy failed (clipboard not available).')
+  );
+}
+</script>
+
 
 <h1>RedCheck Report</h1>
+<div style="margin:8px 0">
+  <button onclick="copyFixes()">Copy all remediation commands</button>
+</div>
+<td class="small rem">{{.Remediation}}</td>
+
+
 <div class="header-meta">
   Host: {{.Hostname}} &middot; Time: {{.Time}} &middot;
   Built-in rules: {{.BuiltInRules}} {{if gt .ExternalRules 0}}+ External: {{.ExternalRules}}{{end}} &middot;
@@ -45,6 +66,10 @@ const tpl = `<!doctype html>
   For full coverage run with root privileges (e.g., <code>sudo ./redcheck scan ...</code>).
 </div>
 {{end}}
+{{if .Evidence}}
+<div class="small"><details><summary>Evidence</summary><pre>{{.Evidence}}</pre></details></div>
+{{end}}
+
 
 <!-- (rest of template unchanged) -->
 

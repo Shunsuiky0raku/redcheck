@@ -105,3 +105,26 @@ func resolveIncludes(dir, pattern string) ([]string, error) {
 	matches, err := filepath.Glob(filepath.Join(dir, pattern))
 	return matches, err
 }
+func SSHRootLoginDisabled() (val, evidence string, err error) {
+	b, err := os.ReadFile("/etc/ssh/sshd_config")
+	if err != nil {
+		return "unknown", "", err
+	}
+	s := string(b)
+	// capture the line
+	line := grepFirstLine(s, "PermitRootLogin")
+	if strings.Contains(line, "no") {
+		return "true", "PermitRootLogin line: " + strings.TrimSpace(line), nil
+	}
+	return "false", "PermitRootLogin line: " + strings.TrimSpace(line), nil
+}
+func grepFirstLine(s, key string) string {
+	sc := bufio.NewScanner(strings.NewReader(s))
+	for sc.Scan() {
+		line := sc.Text()
+		if strings.Contains(line, key) && !strings.HasPrefix(strings.TrimSpace(line), "#") {
+			return line
+		}
+	}
+	return ""
+}

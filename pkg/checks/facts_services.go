@@ -2,51 +2,63 @@
 package checks
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 	"strings"
 )
 
-// FirewalldInstalled returns "present" or "absent".
+// internal helpers
+func runOut(name string, args ...string) (string, error) {
+	var buf bytes.Buffer
+	cmd := exec.Command(name, args...)
+	cmd.Stdout = &buf
+	cmd.Stderr = nil
+	err := cmd.Run()
+	return buf.String(), err
+}
+
+// FirewalldInstalled returns "present"/"absent" with multiple strategies.
 func FirewalldInstalled() (string, error) {
-	// Prefer rpm on Rocky/RHEL; fall back to dnf if rpm isn't there.
-	if _, err := exec.LookPath("rpm"); err == nil {
-		out, _ := exec.Command("rpm", "-q", "firewalld").CombinedOutput()
-		s := string(out)
-		if strings.Contains(s, "is not installed") || strings.TrimSpace(s) == "" {
-			return "absent", nil
-		}
+	// 1) systemctl knows about the unit?
+	if out, _ := runOut("systemctl", "list-unit-files", "firewalld.service"); strings.Contains(out, "firewalld.service") {
 		return "present", nil
 	}
-	// Fallback: dnf list installed
-	if _, err := exec.LookPath("dnf"); err == nil {
-		out, _ := exec.Command("dnf", "-q", "list", "installed", "firewalld").CombinedOutput()
-		if strings.Contains(string(out), "Installed Packages") {
-			return "present", nil
-		}
-		return "absent", nil
+	// 2) rpm database (RHEL/Rocky)
+	if out, _ := runOut("rpm", "-q", "firewalld"); strings.Contains(out, "firewalld") && !strings.Contains(out, "not installed") {
+		return "present", nil
 	}
-	// Last resort: check file existence of unit as a weak signal
-	if _, err := os.Stat("/usr/lib/systemd/system/firewalld.service"); err == nil {
+	// 3) which firewalld (binary present)
+	if _, err := exec.LookPath("firewalld"); err == nil {
 		return "present", nil
 	}
 	return "absent", nil
 }
 
-// FirewalldState returns one of:
-// "enabled_active", "enabled_inactive", "disabled_active", "disabled_inactive".
+// FirewalldState returns:
+//
+//	"enabled_active", "active_not_enabled", "enabled_inactive", "disabled_inactive"
 func FirewalldState() (string, error) {
-	en, _ := exec.Command("systemctl", "is-enabled", "firewalld").Output()
-	ac, _ := exec.Command("systemctl", "is-active", "firewalld").Output()
-	e := strings.TrimSpace(string(en))
-	a := strings.TrimSpace(string(ac))
+	// if unit not present at all, treat as disabled_inactive
+	out, _ := runOut("systemctl", "list-unit-files", "firewalld.service")
+	if !strings.Contains(out, "firewalld.service") {
+		return "disabled_inactive", nil
+	}
+	enabled := false
+	active := false
+	if out, _ := runOut("systemctl", "is-enabled", "firewalld"); strings.Contains(out, "enabled") {
+		enabled = true
+	}
+	if out, _ := runOut("systemctl", "is-active", "firewalld"); strings.Contains(out, "active") {
+		active = true
+	}
 	switch {
-	case e == "enabled" && a == "active":
+	case enabled && active:
 		return "enabled_active", nil
-	case e == "enabled" && a != "active":
+	case active && !enabled:
+		return "active_not_enabled", nil
+	case enabled && !active:
 		return "enabled_inactive", nil
-	case e != "enabled" && a == "active":
-		return "disabled_active", nil
 	default:
 		return "disabled_inactive", nil
 	}

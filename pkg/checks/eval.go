@@ -4,17 +4,6 @@ package checks
 import "strings"
 import "strconv"
 
-type CheckResult struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Category    string `json:"category"`
-	Status      string `json:"status"` // pass|fail|error|na
-	Observed    string `json:"observed"`
-	Expected    string `json:"expected"`
-	Severity    string `json:"severity"`
-	Remediation string `json:"remediation"`
-}
-
 // Implement scoring.Result
 func (c CheckResult) GetID() string       { return c.ID }
 func (c CheckResult) GetSeverity() string { return c.Severity }
@@ -36,6 +25,13 @@ func Evaluate(rule Rule) CheckResult {
 		err error
 	)
 	switch rule.Fact {
+	case "ssh.root_login_disabled":
+		var ev string
+		val, ev, err = SSHRootLoginDisabled()
+		if Verbose && ev != "" {
+			res.Evidence = ev
+		}
+
 	case "ssh.permit_root_login":
 		val, err = SSHPermitRootLogin()
 	case "sysctl.net.ipv6.conf.all.accept_redirects":
@@ -90,6 +86,20 @@ func Evaluate(rule Rule) CheckResult {
 		val, err = LoginDefsPassMinDaysOK()
 	case "login.defs.pass_warn_age_ok":
 		val, err = LoginDefsPassWarnAgeOK()
+	case "fs.vartmp_mount_opts":
+		// If there is no separate /var/tmp mount, mark N/A and return early
+		if sep, err2 := hasSeparateMount("/var/tmp"); err2 == nil && !sep {
+			res.Status = "na"
+			res.Observed = ""
+			res.Expected = "nodev,nosuid,noexec"
+			return res
+		}
+		// Otherwise, we just observe the mount options; the rule's ExpectedAll
+		// will decide pass/fail later.
+		val, err = MountOptions("/var/tmp")
+
+		// set res.Status / Observed / Expected accordingly…
+
 	case "useradd.inactive_ok":
 		val, err = UseraddInactiveOK()
 	case "accounts.aging_policy_ok":
