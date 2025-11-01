@@ -86,19 +86,16 @@ func Evaluate(rule Rule) CheckResult {
 		val, err = LoginDefsPassMinDaysOK()
 	case "login.defs.pass_warn_age_ok":
 		val, err = LoginDefsPassWarnAgeOK()
-	case "fs.vartmp_mount_opts":
-		// If there is no separate /var/tmp mount, mark N/A and return early
-		if sep, err2 := hasSeparateMount("/var/tmp"); err2 == nil && !sep {
-			res.Status = "na"
-			res.Observed = ""
-			res.Expected = "nodev,nosuid,noexec"
-			return res
-		}
-		// Otherwise, we just observe the mount options; the rule's ExpectedAll
-		// will decide pass/fail later.
-		val, err = MountOptions("/var/tmp")
 
-		// set res.Status / Observed / Expected accordingly…
+	case "services.firewalld_state":
+		if Verbose {
+			res.Evidence = "systemctl is-enabled firewalld; systemctl is-active firewalld"
+		}
+
+	case "fs.tmp_mount_opts", "fs.devshm_mount_opts", "fs.vartmp_mount_opts":
+		if Verbose && res.Observed != "" {
+			res.Evidence = "mount opts: " + res.Observed
+		}
 
 	case "useradd.inactive_ok":
 		val, err = UseraddInactiveOK()
