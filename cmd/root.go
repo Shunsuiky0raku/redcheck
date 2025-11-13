@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"os"
-
+	"github.com/Shunsuiky0raku/redcheck/pkg/ui"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var rootCmd = &cobra.Command{
@@ -14,6 +14,7 @@ var rootCmd = &cobra.Command{
 
 // Execute is called by main.main().
 func Execute() {
+	ui.Banner()
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

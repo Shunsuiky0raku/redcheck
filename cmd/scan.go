@@ -6,6 +6,7 @@ import (
 	htmlreport "github.com/Shunsuiky0raku/redcheck/pkg/report/html"
 	jsonreport "github.com/Shunsuiky0raku/redcheck/pkg/report/json"
 	"github.com/Shunsuiky0raku/redcheck/pkg/scoring"
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
@@ -75,6 +76,19 @@ var scanCmd = &cobra.Command{
 			}
 		}
 		checks.Verbose = flagVerbose
+		// right before the loop that starts evaluating checks
+		bar := progressbar.NewOptions(len(sel),
+			progressbar.OptionSetDescription("Running checks"),
+			progressbar.OptionShowCount(),
+			progressbar.OptionSetWidth(15),
+		)
+
+		results := make([]checks.CheckResult, 0, len(sel))
+		for _, r := range sel {
+			res := evalWithTimeout(r, flagTimeout)
+			results = append(results, res)
+			bar.Add(1)
+		}
 
 		// 4) evaluate
 		// -------- 4) evaluate (concurrent with per-check timeout) --------
@@ -107,7 +121,7 @@ var scanCmd = &cobra.Command{
 		}()
 		go func() { wg.Wait(); close(outs) }()
 
-		results := make([]checks.CheckResult, 0, len(sel))
+		results = make([]checks.CheckResult, 0, len(sel))
 		for o := range outs {
 			results = append(results, o.cr)
 		}
@@ -131,6 +145,13 @@ var scanCmd = &cobra.Command{
 			}
 			fmt.Println("Fix script written:", flagEmitFix)
 		}
+		fmt.Println("\nScore interpretation:")
+fmt.Println("  100%   → Fully secure / Compliant")
+fmt.Println("  80–99% → Strong posture")
+fmt.Println("  50–79% → Moderate risk")
+fmt.Println("  20–49% → Weak security")
+fmt.Println("  0–19%  → Critical risk (multiple high-severity failures)")
+fmt.Println("\nNote: Severity (High/Medium/Low) influences the weighted score.")
 
 		// 6) terminal summary
 		fmt.Printf("\nGlobal score: %.1f\n", scores.Global)
