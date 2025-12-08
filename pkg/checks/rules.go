@@ -1,36 +1,23 @@
 package checks
 
-import (
-	_ "embed"
-	"encoding/json"
-	"gopkg.in/yaml.v3"
-)
+// FilterForMode selects rules based on flags.
+func FilterForMode(all, cis, pe bool, rules []Rule) []Rule {
+	var out []Rule
 
-type Rule struct {
-	ID          string   `yaml:"id" json:"id"`
-	Title       string   `yaml:"title" json:"title"`
-	Category    string   `yaml:"category" json:"category"`
-	Fact        string   `yaml:"fact" json:"fact"`
-	Expected    string   `yaml:"expected,omitempty" json:"expected,omitempty"`
-	ExpectedAll []string `yaml:"expected_allof,omitempty" json:"expected_allof,omitempty"`
-	Severity    string   `yaml:"severity" json:"severity"`
-	Remediation string   `yaml:"remediation" json:"remediation"`
-	Tags        []string `yaml:"tags,omitempty" json:"tags,omitempty"`
-}
-
-//go:embed rules.yaml
-var rulesYAML []byte
-
-func LoadRules() ([]Rule, error) {
-	var rs []Rule
-	if err := yaml.Unmarshal(rulesYAML, &rs); err != nil {
-		return nil, err
+	for _, r := range rules {
+		if all {
+			out = append(out, r)
+			continue
+		}
+		if cis && r.HasTag("cis") {
+			out = append(out, r)
+			continue
+		}
+		if pe && r.HasTag("recon") {
+			out = append(out, r)
+			continue
+		}
 	}
-	return rs, nil
+	return out
 }
 
-func MustRulesAsJSON() string {
-	rs, _ := LoadRules()
-	b, _ := json.MarshalIndent(rs, "", "  ")
-	return string(b)
-}

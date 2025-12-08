@@ -1,45 +1,56 @@
 package checks
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
-// LoadRulesFromDir reads *.yml/*.yaml in dir and returns appended rules.
-// Supports both a single Rule doc and a YAML list of Rule.
-func LoadRulesFromDir(dir string) ([]Rule, error) {
-	fi, err := os.Stat(dir)
+// LoadBuiltInRules loads rules.yaml from the embedded path.
+func LoadBuiltInRules() ([]Rule, error) {
+	data, err := os.ReadFile("pkg/checks/rules.yaml")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read built-in rules.yaml: %w", err)
 	}
-	if !fi.IsDir() {
-		return nil, errors.New("rules path is not a directory")
+	var rules []Rule
+	if err := yaml.Unmarshal(data, &rules); err != nil {
+		return nil, fmt.Errorf("unmarshal built-in rules.yaml: %w", err)
 	}
-
-	patterns := []string{"*.yml", "*.yaml"}
-	var paths []string
-	for _, pat := range patterns {
-		glob, _ := filepath.Glob(filepath.Join(dir, pat))
-		paths = append(paths, glob...)
-	}
-	var out []Rule
-	for _, p := range paths {
-		b, err := os.ReadFile(p)
-		if err != nil {
-			continue
-		}
-		var list []Rule
-		if err := yaml.Unmarshal(b, &list); err == nil && len(list) > 0 {
-			out = append(out, list...)
-			continue
-		}
-		var one Rule
-		if err := yaml.Unmarshal(b, &one); err == nil && one.ID != "" {
-			out = append(out, one)
-		}
-	}
-	return out, nil
+	return rules, nil
 }
+
+// LoadRulesFromDir loads YAML rule files from a directory.
+func LoadRulesFromDir(dir string) ([]Rule, error) {
+	var out []Rule
+
+	err := filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(p, ".yml") && !strings.HasSuffix(p, ".yaml") {
+			return nil
+		}
+
+		data, err := os.ReadFile(p)
+		if err != nil {
+			return fmt.Errorf("read %s: %w", p, err)
+		}
+
+		var chunk []Rule
+		if err := yaml.Unmarshal(data, &chunk); err != nil {
+			return fmt.Errorf("unmarshal %s: %w", p, err)
+		}
+
+		out = append(out, chunk...)
+		return nil
+	})
+
+	return out, err
+}
+

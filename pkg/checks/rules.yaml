@@ -1,3 +1,7 @@
+########################################
+#   CIS AUTHENTICATION RULES
+########################################
+
 - id: "CIS-5.1.1"
   title: "Disable root login over SSH"
   category: "Auth"
@@ -5,95 +9,10 @@
   expected: "no"
   severity: "High"
   remediation: "Set 'PermitRootLogin no' in /etc/ssh/sshd_config and reload sshd."
-  tags: ["cis","ssh"]
+  tags: ["cis", "ssh"]
+  files:
+    - /etc/ssh/sshd_config
 
-- id: "CIS-1.1.2.2-devshm"
-  title: "/dev/shm mounted with nodev,nosuid,noexec"
-  category: "FS_Perms"
-  fact: "mount.devshm_options"
-  expected_allof: ["nodev","nosuid","noexec"]
-  severity: "High"
-  remediation: "Ensure /dev/shm has nodev,nosuid,noexec (fstab or systemd mount)."
-  tags: ["cis","fs"]
-
-- id: "CIS-3.3.1"
-  title: "IPv6 redirects disabled (all)"
-  category: "Services"
-  fact: "sysctl.net.ipv6.conf.all.accept_redirects"
-  expected: "0"
-  severity: "Medium"
-  remediation: "Set net.ipv6.conf.all.accept_redirects=0 and persist in sysctl.conf."
-  tags: ["cis","net"]
-- id: "CIS-4.1.1"
-  title: "firewalld installed"
-  category: "Services"
-  fact: "pkg.firewalld_installed"
-  expected: "present"
-  severity: "High"
-  remediation: "Install firewalld and enable the service."
-  tags: ["cis","services"]
-
-- id: "CIS-4.1.2"
-  title: "firewalld enabled and active"
-  category: "Services"
-  fact: "svc.firewalld_state"
-  expected: "enabled_active"
-  severity: "High"
-  remediation: "systemctl enable --now firewalld"
-  tags: ["cis","services"]
-
-- id: "CIS-1.6.1"
-  title: "Crypto policy not LEGACY"
-  category: "Auth"
-  fact: "crypto.policy"
-  expected: "NOT_LEGACY"
-  severity: "Medium"
-  remediation: "Use `update-crypto-policies --set DEFAULT` (or higher), avoid LEGACY."
-  tags: ["cis","crypto"]
-- id: "CIS-1.1.2.2-tmp"
-  title: "/tmp mounted with nodev,nosuid,noexec"
-  category: "FS_Perms"
-  fact: "mount.tmp_options"
-  expected_allof: ["nodev","nosuid","noexec"]
-  severity: "High"
-  remediation: "Ensure /tmp has nodev,nosuid,noexec (fstab or systemd tmp.mount)."
-  tags: ["cis","fs"]
-
-- id: "CIS-1.1.2.2-vartmp"
-  title: "/var/tmp mounted with nodev,nosuid,noexec"
-  category: "FS_Perms"
-  fact: "mount.vartmp_options"
-  expected_allof: ["nodev","nosuid","noexec"]
-  severity: "High"
-  remediation: "Ensure /var/tmp has nodev,nosuid,noexec."
-  tags: ["cis","fs"]
-- id: "CIS-5.2.2"
-  title: "sudo uses pty"
-  category: "Privileges"
-  fact: "sudo.use_pty"
-  expected: "true"
-  severity: "High"
-  remediation: "Add 'Defaults use_pty' in sudoers."
-  tags: ["cis","sudo"]
-
-- id: "CIS-5.2.3"
-  title: "sudo has logfile"
-  category: "Privileges"
-  fact: "sudo.logfile"
-  expected: "true"
-  severity: "Medium"
-  remediation: "Add 'Defaults logfile=\"/var/log/sudo.log\"' in sudoers."
-  tags: ["cis","sudo"]
-
-- id: "CIS-5.4.1"
-  title: "Only root has UID 0"
-  category: "Privileges"
-  fact: "acct.uid0_unique"
-  expected: "true"
-  severity: "Critical"
-  remediation: "Ensure only root has UID 0."
-  tags: ["cis","accounts"]
-# --- SSH extras
 - id: "CIS-5.1.6"
   title: "X11Forwarding disabled"
   category: "Auth"
@@ -101,7 +20,9 @@
   expected: "no"
   severity: "Low"
   remediation: "Set 'X11Forwarding no' in /etc/ssh/sshd_config and reload sshd."
-  tags: ["cis","ssh"]
+  tags: ["cis", "ssh"]
+  files:
+    - /etc/ssh/sshd_config
 
 - id: "CIS-5.1.14"
   title: "SSH Banner configured"
@@ -109,255 +30,153 @@
   fact: "ssh.banner"
   expected: "present"
   severity: "Low"
-  remediation: "Set 'Banner /etc/issue.net' (or similar) and reload sshd."
-  tags: ["cis","ssh"]
+  remediation: "Set 'Banner /etc/issue.net' or another approved file, then reload sshd."
+  tags: ["cis", "ssh"]
+  files:
+    - /etc/ssh/sshd_config
+    - /etc/issue.net
 
-# --- Sysctl (IPv6/IPv4)
-- id: "CIS-3.3.3"
-  title: "IPv6 accept_ra disabled (all)"
+
+########################################
+#  FILESYSTEM PERMISSIONS
+########################################
+
+- id: "CIS-1.1.2.2-devshm"
+  title: "/dev/shm mounted with nodev,nosuid,noexec"
+  category: "FS_Perms"
+  fact: "mount.devshm_options"
+  expected_all: ["nodev","nosuid","noexec"]
+  severity: "High"
+  remediation: "Ensure /dev/shm has nodev,nosuid,noexec by editing /etc/fstab or systemd mount configs."
+  tags: ["cis", "fs"]
+  files:
+    - /etc/fstab
+
+- id: "CIS-1.1.2.2-tmp"
+  title: "/tmp mounted with nodev,nosuid,noexec"
+  category: "FS_Perms"
+  fact: "mount.tmp_options"
+  expected_all: ["nodev","nosuid","noexec"]
+  severity: "High"
+  remediation: "Ensure /tmp has nodev,nosuid,noexec via /etc/fstab or systemd tmp.mount."
+  tags: ["cis", "fs"]
+  files:
+    - /etc/fstab
+    - /usr/lib/systemd/system/tmp.mount
+
+- id: "CIS-1.1.2.2-vartmp"
+  title: "/var/tmp mounted with nodev,nosuid,noexec"
+  category: "FS_Perms"
+  fact: "mount.vartmp_options"
+  expected_all: ["nodev","nosuid","noexec"]
+  severity: "High"
+  remediation: "Ensure /var/tmp has nodev,nosuid,noexec."
+  tags: ["cis", "fs"]
+  files:
+    - /etc/fstab
+
+
+########################################
+#   FIREWALL & SERVICE CONFIGURATION
+########################################
+
+- id: "CIS-4.1.1"
+  title: "firewalld installed"
   category: "Services"
-  fact: "sysctl.net.ipv6.conf.all.accept_ra"
-  expected: "0"
-  severity: "Medium"
-  remediation: "Set net.ipv6.conf.all.accept_ra=0 and persist."
-  tags: ["cis","net"]
+  fact: "pkg.firewalld_installed"
+  expected: "present"
+  severity: "High"
+  remediation: "Install firewalld using your package manager and enable the service."
+  tags: ["cis", "services"]
+  files:
+    - /usr/lib/systemd/system/firewalld.service
 
-- id: "CIS-3.3.5"
-  title: "IPv6 accept_source_route disabled (all)"
+- id: "CIS-4.1.2"
+  title: "firewalld enabled and active"
   category: "Services"
-  fact: "sysctl.net.ipv6.conf.all.accept_source_route"
-  expected: "0"
-  severity: "Medium"
-  remediation: "Set net.ipv6.conf.all.accept_source_route=0 and persist."
-  tags: ["cis","net"]
+  fact: "svc.firewalld_state"
+  expected: "enabled_active"
+  severity: "High"
+  remediation: "Run: systemctl enable --now firewalld"
+  tags: ["cis", "services"]
+  files:
+    - /etc/firewalld
 
-- id: "CIS-3.2.1"
-  title: "TCP SYN cookies enabled"
-  category: "Services"
-  fact: "sysctl.net.ipv4.tcp_syncookies"
-  expected: "1"
-  severity: "Medium"
-  remediation: "Set net.ipv4.tcp_syncookies=1 and persist."
-  tags: ["cis","net"]
 
-# --- Sudo hardening
-- id: "CIS-5.2.4"
-  title: "sudo timestamp_timeout is sane (<=15)"
+########################################
+#   CRYPTO POLICY
+########################################
+
+- id: "CIS-1.6.1"
+  title: "Crypto policy not LEGACY"
+  category: "Auth"
+  fact: "crypto.policy"
+  expected: "NOT_LEGACY"
+  severity: "Medium"
+  remediation: "Run: update-crypto-policies --set DEFAULT (or higher)"
+  tags: ["cis", "crypto"]
+  files:
+    - /etc/crypto-policies
+
+
+########################################
+#   SUDO HARDENING
+########################################
+
+- id: "CIS-5.2.2"
+  title: "sudo uses pty"
   category: "Privileges"
-  fact: "sudo.timestamp_timeout_sane"
+  fact: "sudo.use_pty"
   expected: "true"
-  severity: "Medium"
-  remediation: "Set 'Defaults timestamp_timeout=15' (or lower)."
+  severity: "High"
+  remediation: "Add 'Defaults use_pty' to /etc/sudoers."
   tags: ["cis","sudo"]
+  files:
+    - /etc/sudoers
 
-- id: "CIS-5.2.5"
-  title: "No NOPASSWD wildcards in sudoers"
+- id: "CIS-5.2.3"
+  title: "sudo has logfile"
   category: "Privileges"
-  fact: "sudo.nopasswd_wildcard_forbidden"
+  fact: "sudo.logfile"
   expected: "true"
-  severity: "High"
-  remediation: "Remove 'NOPASSWD' with wildcard commands; require authentication."
+  severity: "Medium"
+  remediation: "Add 'Defaults logfile=\"/var/log/sudo.log\"' to /etc/sudoers."
   tags: ["cis","sudo"]
+  files:
+    - /etc/sudoers
 
-# --- Authselect / PAM presence (simple v1 check)
-- id: "CIS-5.3.1"
-  title: "PAM pwquality present"
-  category: "Auth"
-  fact: "pam.pwquality_present"
+
+########################################
+#  PRIVILEGE ESCALATION SAFETY
+########################################
+
+- id: "CIS-5.4.1"
+  title: "Only root has UID 0"
+  category: "Privileges"
+  fact: "acct.uid0_unique"
   expected: "true"
-  severity: "High"
-  remediation: "Ensure pam_pwquality.so is configured in system-auth/password-auth (via authselect)."
-  tags: ["cis","pam"]
-
-- id: "CIS-5.3.2"
-  title: "PAM pwhistory present"
-  category: "Auth"
-  fact: "pam.pwhistory_present"
-  expected: "true"
-  severity: "High"
-  remediation: "Ensure pam_pwhistory.so is configured in system-auth/password-auth (via authselect)."
-  tags: ["cis","pam"]
-
-- id: "CIS-5.3.3"
-  title: "PAM faillock present"
-  category: "Auth"
-  fact: "pam.faillock_present"
-  expected: "true"
-  severity: "High"
-  remediation: "Ensure pam_faillock.so is configured in system-auth/password-auth (via authselect)."
-  tags: ["cis","pam"]
-# --- Sysctl (IPv6/IPv4 defaults)
-- id: "CIS-3.3.2"
-  title: "IPv6 redirects disabled (default)"
-  category: "Services"
-  fact: "sysctl.net.ipv6.conf.default.accept_redirects"
-  expected: "0"
-  severity: "Medium"
-  remediation: "Set net.ipv6.conf.default.accept_redirects=0 and persist."
-  tags: ["cis","net"]
-
-- id: "CIS-3.3.4"
-  title: "IPv6 accept_ra disabled (default)"
-  category: "Services"
-  fact: "sysctl.net.ipv6.conf.default.accept_ra"
-  expected: "0"
-  severity: "Medium"
-  remediation: "Set net.ipv6.conf.default.accept_ra=0 and persist."
-  tags: ["cis","net"]
-
-- id: "CIS-3.3.6"
-  title: "IPv6 accept_source_route disabled (default)"
-  category: "Services"
-  fact: "sysctl.net.ipv6.conf.default.accept_source_route"
-  expected: "0"
-  severity: "Medium"
-  remediation: "Set net.ipv6.conf.default.accept_source_route=0 and persist."
-  tags: ["cis","net"]
-
-# --- Accounts / password policy (login.defs)
-- id: "CIS-5.4.2"
-  title: "PASS_MAX_DAYS <= 365"
-  category: "Auth"
-  fact: "login.defs.pass_max_days_ok"
-  expected: "true"
-  severity: "Medium"
-  remediation: "Set PASS_MAX_DAYS 365 (or lower) in /etc/login.defs."
+  severity: "Critical"
+  remediation: "Remove UID 0 from non-root accounts."
   tags: ["cis","accounts"]
+  files:
+    - /etc/passwd
 
-- id: "CIS-5.4.3"
-  title: "PASS_MIN_DAYS >= 1"
-  category: "Auth"
-  fact: "login.defs.pass_min_days_ok"
-  expected: "true"
-  severity: "Low"
-  remediation: "Set PASS_MIN_DAYS 1 (or higher) in /etc/login.defs."
-  tags: ["cis","accounts"]
 
-- id: "CIS-5.4.4"
-  title: "PASS_WARN_AGE >= 7"
-  category: "Auth"
-  fact: "login.defs.pass_warn_age_ok"
-  expected: "true"
-  severity: "Low"
-  remediation: "Set PASS_WARN_AGE 7 (or higher) in /etc/login.defs."
-  tags: ["cis","accounts"]
+########################################
+# RECON / PRIVESC RULES
+########################################
 
-# --- Account inactivity lock (defaults)
-- id: "CIS-5.4.5"
-  title: "Default INACTIVE <= 30 days"
-  category: "Auth"
-  fact: "useradd.inactive_ok"
-  expected: "true"
-  severity: "Medium"
-  remediation: "Set `useradd -D -f 30` to enforce default inactive lock."
-  tags: ["cis","accounts"]
-- id: "CIS-5.3.1-args"
-  title: "pwquality minlen >= 14"
-  category: "Auth"
-  fact: "pam.pwquality_minlen_ok"
-  expected: "true"
-  severity: "Medium"
-  remediation: "Set minlen=14 in pam_pwquality."
-  tags: ["cis","pam"]
-# --- PAM argument checks
-- id: "CIS-5.3.1-minlen"
-  title: "pwquality minlen >= 14"
-  category: "Auth"
-  fact: "pam.pwquality_minlen_ok"
-  expected: "true"
-  severity: "Medium"
-  remediation: "In pam_pwquality.so line(s), set minlen=14 or higher."
-  tags: ["cis","pam"]
-
-- id: "CIS-5.3.1-retry"
-  title: "pwquality retry <= 3"
-  category: "Auth"
-  fact: "pam.pwquality_retry_ok"
-  expected: "true"
-  severity: "Low"
-  remediation: "In pam_pwquality.so line(s), set retry=3 or lower."
-  tags: ["cis","pam"]
-
-- id: "CIS-5.3.2-remember"
-  title: "pwhistory remember >= 5"
-  category: "Auth"
-  fact: "pam.pwhistory_remember_ok"
-  expected: "true"
-  severity: "Medium"
-  remediation: "In pam_pwhistory.so line(s), set remember=5 or higher."
-  tags: ["cis","pam"]
-
-- id: "CIS-5.3.3-fail-deny"
-  title: "faillock deny <= 5"
-  category: "Auth"
-  fact: "pam.faillock_deny_ok"
-  expected: "true"
-  severity: "Medium"
-  remediation: "In pam_faillock.so line(s), set deny=5 or lower."
-  tags: ["cis","pam"]
-
-- id: "CIS-5.3.3-fail-unlock"
-  title: "faillock unlock_time >= 900"
-  category: "Auth"
-  fact: "pam.faillock_unlock_ok"
-  expected: "true"
-  severity: "Low"
-  remediation: "In pam_faillock.so line(s), set unlock_time=900 or higher."
-  tags: ["cis","pam"]
-
-# --- IPv4 sysctls (all + default)
-- id: "CIS-3.2.2"
-  title: "IPv4 redirects disabled (all)"
-  category: "Services"
-  fact: "sysctl.net.ipv4.conf.all.accept_redirects"
-  expected: "0"
-  severity: "Medium"
-  remediation: "Set net.ipv4.conf.all.accept_redirects=0 and persist."
-  tags: ["cis","net"]
-
-- id: "CIS-3.2.3"
-  title: "IPv4 redirects disabled (default)"
-  category: "Services"
-  fact: "sysctl.net.ipv4.conf.default.accept_redirects"
-  expected: "0"
-  severity: "Medium"
-  remediation: "Set net.ipv4.conf.default.accept_redirects=0 and persist."
-  tags: ["cis","net"]
-
-- id: "CIS-3.2.4"
-  title: "IPv4 accept_source_route disabled (all)"
-  category: "Services"
-  fact: "sysctl.net.ipv4.conf.all.accept_source_route"
-  expected: "0"
-  severity: "Medium"
-  remediation: "Set net.ipv4.conf.all.accept_source_route=0 and persist."
-  tags: ["cis","net"]
-
-- id: "CIS-3.2.5"
-  title: "IPv4 accept_source_route disabled (default)"
-  category: "Services"
-  fact: "sysctl.net.ipv4.conf.default.accept_source_route"
-  expected: "0"
-  severity: "Medium"
-  remediation: "Set net.ipv4.conf.default.accept_source_route=0 and persist."
-  tags: ["cis","net"]
-- id: "CIS-5.4.users-aging"
-  title: "Local users comply with aging policy"
-  category: "Auth"
-  fact: "accounts.aging_policy_ok"
-  expected: "true"
-  severity: "Medium"
-  remediation: "For each flagged user, adjust with 'chage' (MAX<=365, MIN>=1, INACTIVE<=30)."
-  tags: ["cis","accounts"]
-# --- Recon / privilege escalation
 - id: "RC-1.1"
   title: "Unexpected SUID/SGID files found"
   category: "Recon"
   fact: "recon.suid_sgid_unexpected"
   expected: "none"
   severity: "High"
-  remediation: "Review SUID/SGID files and remove from non-standard locations."
-  tags: ["recon","local","privilege"]
+  remediation: "Remove unnecessary SUID/SGID files."
+  tags: ["recon","privilege","local"]
+  files:
+    - /usr/bin
+    - /usr/lib
 
 - id: "RC-1.2"
   title: "World-writable directories in PATH"
@@ -365,6 +184,9 @@
   fact: "recon.path_world_writable"
   expected: "none"
   severity: "High"
-  remediation: "Remove world-writable permissions from directories in $PATH."
+  remediation: "Remove world-writable permissions from directories in PATH."
   tags: ["recon","privilege"]
+  files:
+    - /etc/profile
+    - /etc/environment
 
