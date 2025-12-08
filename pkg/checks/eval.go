@@ -1,215 +1,89 @@
-// pkg/checks/eval.go
 package checks
 
-import "strings"
-import "strconv"
+import (
+	"context"
+	"strings"
+	"time"
+)
 
-// Implement scoring.Result
-func (c CheckResult) GetID() string       { return c.ID }
-func (c CheckResult) GetSeverity() string { return c.Severity }
-func (c CheckResult) GetStatus() string   { return c.Status }
-func (c CheckResult) GetCategory() string { return c.Category }
+// EvaluateWithTimeout runs a rule with a timeout.
+func EvaluateWithTimeout(rule Rule, timeout time.Duration) CheckResult {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
-func Evaluate(rule Rule) CheckResult {
-	res := CheckResult{
+	resultCh := make(chan CheckResult, 1)
+
+	go func() {
+		// FIX: call EvaluateRule instead of undefined Evaluate()
+		resultCh <- EvaluateRule(rule, nil)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return CheckResult{
+			ID:       rule.ID,
+			Title:    rule.Title,
+			Category: rule.Category,
+			Status:   "error",
+			Observed: "timeout",
+			Expected: rule.Expected,
+			Severity: rule.Severity,
+		}
+	case r := <-resultCh:
+		return r
+	}
+}
+
+// MAIN EVALUATION LOGIC
+func EvaluateRule(rule Rule, facts map[string]string) CheckResult {
+
+	observed := ""
+	if facts != nil {
+		observed = facts[rule.Fact]
+	}
+
+	result := CheckResult{
 		ID:          rule.ID,
 		Title:       rule.Title,
 		Category:    rule.Category,
 		Severity:    rule.Severity,
+		Observed:    observed,
+		Expected:    rule.Expected,
 		Remediation: rule.Remediation,
+		FilePath:    rule.FilePath,
+		Tags:        rule.Tags,
 	}
 
-	// Fetch observed value
-	var (
-		val string
-		err error
-	)
-	switch rule.Fact {
-	case "ssh.root_login_disabled":
-		var ev string
-		val, ev, err = SSHRootLoginDisabled()
-		if Verbose && ev != "" {
-			res.Evidence = ev
+	// ALL-OF rules
+	if len(rule.ExpectedAll) > 0 {
+		missing := []string{}
+		for _, want := range rule.ExpectedAll {
+			if !strings.Contains(observed, want) {
+				missing = append(missing, want)
+			}
 		}
 
-	case "ssh.permit_root_login":
-		val, err = SSHPermitRootLogin()
-	case "sysctl.net.ipv6.conf.all.accept_redirects":
-		val, err = SysctlValue("net.ipv6.conf.all.accept_redirects")
-	case "mount.devshm_options":
-		val, err = MountOptions("/dev/shm")
-	case "pkg.firewalld_installed":
-		val, err = FirewalldInstalled()
-	case "svc.firewalld_state":
-		val, err = FirewalldState()
-	case "crypto.policy":
-		val, err = CryptoPolicy()
-	case "mount.tmp_options":
-		val, err = MountOptions("/tmp")
-	case "mount.vartmp_options":
-		val, err = MountOptions("/var/tmp")
-	case "sudo.use_pty":
-		val, err = SudoUsePTY()
-	case "sudo.logfile":
-		val, err = SudoLogfile()
-	case "acct.uid0_unique":
-		val, err = UID0Unique()
-	case "ssh.x11_forwarding":
-		val, err = SSHX11Forwarding()
-	case "ssh.banner":
-		val, err = SSHBannerPresent()
-	case "sysctl.net.ipv6.conf.all.accept_ra":
-		val, err = SysctlValue("net.ipv6.conf.all.accept_ra")
-	case "sysctl.net.ipv6.conf.all.accept_source_route":
-		val, err = SysctlValue("net.ipv6.conf.all.accept_source_route")
-	case "sysctl.net.ipv4.tcp_syncookies":
-		val, err = SysctlValue("net.ipv4.tcp_syncookies")
-	case "sudo.timestamp_timeout_sane":
-		val, err = SudoTimestampTimeoutSane()
-	case "sudo.nopasswd_wildcard_forbidden":
-		val, err = SudoNoPasswdWildcardForbidden()
-	case "pam.pwquality_present":
-		val, err = PamPwqualityPresent()
-	case "pam.pwhistory_present":
-		val, err = PamPwhistoryPresent()
-	case "pam.faillock_present":
-		val, err = PamFaillockPresent()
-	case "sysctl.net.ipv6.conf.default.accept_redirects":
-		val, err = SysctlValueDefault("net.ipv6.conf.default.accept_redirects")
-	case "sysctl.net.ipv6.conf.default.accept_ra":
-		val, err = SysctlValueDefault("net.ipv6.conf.default.accept_ra")
-	case "sysctl.net.ipv6.conf.default.accept_source_route":
-		val, err = SysctlValueDefault("net.ipv6.conf.default.accept_source_route")
-	case "login.defs.pass_max_days_ok":
-		val, err = LoginDefsPassMaxDaysOK()
-	case "login.defs.pass_min_days_ok":
-		val, err = LoginDefsPassMinDaysOK()
-	case "login.defs.pass_warn_age_ok":
-		val, err = LoginDefsPassWarnAgeOK()
-
-	case "services.firewalld_state":
-		if Verbose {
-			res.Evidence = "systemctl is-enabled firewalld; systemctl is-active firewalld"
-		}
-
-	case "fs.tmp_mount_opts", "fs.devshm_mount_opts", "fs.vartmp_mount_opts":
-		if Verbose && res.Observed != "" {
-			res.Evidence = "mount opts: " + res.Observed
-		}
-
-	case "useradd.inactive_ok":
-		val, err = UseraddInactiveOK()
-	case "accounts.aging_policy_ok":
-		var obs string
-		val, obs, err = AccountsAgingPolicyOK()
-		// store offenders detail (if any) into Observed (only for this case)
-		if obs != "" {
-			res.Observed = obs
-		}
-
-	// Recon / privilege checks
-	case "recon.suid_sgid_unexpected":
-		val, err = ReconSuidSgidUnexpected()
-	case "recon.path_world_writable":
-		val, err = ReconPathWorldWritable()
-
-		// PAM args
-	case "pam.pwquality_minlen_ok":
-		a := PamPwqualityArgs()
-		val = boolToStr(atoi(a["minlen"]) >= 14)
-	case "pam.pwquality_retry_ok":
-		a := PamPwqualityArgs()
-		// if retry is missing, fail safe (treat as false)
-		v := a["retry"]
-		if v == "" {
-			val = "false"
+		if len(missing) == 0 {
+			result.Status = "pass"
 		} else {
-			val = boolToStr(atoi(v) <= 3)
+			result.Status = "fail"
+			result.Expected = strings.Join(rule.ExpectedAll, ",")
 		}
-	case "pam.pwhistory_remember_ok":
-		a := PamPwhistoryArgs()
-		v := a["remember"]
-		if v == "" {
-			val = "false"
-		} else {
-			val = boolToStr(atoi(v) >= 5)
-		}
-	case "pam.faillock_deny_ok":
-		a := PamFaillockArgs()
-		v := a["deny"]
-		if v == "" {
-			val = "false"
-		} else {
-			val = boolToStr(atoi(v) <= 5)
-		}
-	case "pam.faillock_unlock_ok":
-		a := PamFaillockArgs()
-		v := a["unlock_time"]
-		if v == "" {
-			val = "false"
-		} else {
-			val = boolToStr(atoi(v) >= 900)
-		}
-
-		// IPv4 sysctls
-	case "sysctl.net.ipv4.conf.all.accept_redirects":
-		val, err = SysctlValue("net.ipv4.conf.all.accept_redirects")
-	case "sysctl.net.ipv4.conf.default.accept_redirects":
-		val, err = SysctlValue("net.ipv4.conf.default.accept_redirects")
-	case "sysctl.net.ipv4.conf.all.accept_source_route":
-		val, err = SysctlValue("net.ipv4.conf.all.accept_source_route")
-	case "sysctl.net.ipv4.conf.default.accept_source_route":
-		val, err = SysctlValue("net.ipv4.conf.default.accept_source_route")
-
-	default:
-		val = "unknown"
-	}
-	res.Observed = val
-
-	// Error collecting the fact
-	if err != nil {
-		res.Status = "error"
-		res.Expected = firstNonEmpty(rule.Expected, strings.Join(rule.ExpectedAll, ","))
-		return res
+		return result
 	}
 
-	// Compare observed vs expected
-	pass := false
-	if rule.Expected != "" {
-		pass = (val == rule.Expected)
-	} else if len(rule.ExpectedAll) > 0 {
-		pass = containsAll(val, rule.ExpectedAll)
+	// Simple rule
+	if rule.Expected == "" {
+		result.Status = "pass"
+		return result
 	}
 
-	res.Status = map[bool]string{true: "pass", false: "fail"}[pass]
-	res.Expected = firstNonEmpty(rule.Expected, strings.Join(rule.ExpectedAll, ","))
-	return res
+	if observed == rule.Expected {
+		result.Status = "pass"
+	} else {
+		result.Status = "fail"
+	}
+
+	return result
 }
 
-func containsAll(hay string, needles []string) bool {
-	for _, n := range needles {
-		if !strings.Contains(hay, n) {
-			return false
-		}
-	}
-	return true
-}
-
-func firstNonEmpty(v ...string) string {
-	for _, s := range v {
-		if strings.TrimSpace(s) != "" {
-			return s
-		}
-	}
-	return ""
-}
-func atoi(s string) int {
-	n, _ := strconv.Atoi(strings.TrimSpace(s))
-	return n
-}
-func boolToStr(b bool) string {
-	if b {
-		return "true"
-	}
-	return "false"
-}

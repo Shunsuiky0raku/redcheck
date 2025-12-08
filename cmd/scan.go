@@ -1,13 +1,8 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
-	"github.com/Shunsuiky0raku/redcheck/pkg/checks"
-	htmlreport "github.com/Shunsuiky0raku/redcheck/pkg/report/html"
-	jsonreport "github.com/Shunsuiky0raku/redcheck/pkg/report/json"
-	"github.com/Shunsuiky0raku/redcheck/pkg/scoring"
-	"github.com/schollz/progressbar/v3"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -15,271 +10,375 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/schollz/progressbar/v3"
+	"github.com/spf13/cobra"
+
+	"github.com/Shunsuiky0raku/redcheck/pkg/checks"
+	htmlreport "github.com/Shunsuiky0raku/redcheck/pkg/report/html"
+	jsonreport "github.com/Shunsuiky0raku/redcheck/pkg/report/json"
+	"github.com/Shunsuiky0raku/redcheck/pkg/scoring"
 )
 
 var (
-	flagAll     bool
-	flagCIS     bool
-	flagPE      bool
-	jsonOut     string
-	htmlOut     string
-	flagTimeout time.Duration
-	flagJobs    int
-	flagRules   string
-	flagVerbose bool
-	flagEmitFix string
+	flagAll         bool
+	flagCIS         bool
+	flagPE          bool
+	flagVerbose     bool
+	flagJobs        int
+	flagTimeout     time.Duration
+	flagJSON        string
+	flagHTML        string
+	flagRulesDir    string
+	flagEmitFix     string
+	flagInteractive bool
+
+	// Remote scan flags – accepted but not yet implemented (for future work)
+	flagSSHHost string
+	flagSSHUser string
+	flagSSHKey  string
 )
 
 var scanCmd = &cobra.Command{
 	Use:   "scan",
-	Short: "Run RedCheck scans",
-	Long:  "Run CIS Rocky v10 checks and/or attacker-centric recon checks and produce JSON/HTML reports.",
+	Short: "Run CIS and recon/priv-esc checks and produce JSON/HTML reports.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// 1) default mode
+		// 1) decide what to run
 		if !flagAll && !flagCIS && !flagPE {
 			flagAll = true
 		}
 
-		// 2) load rules
-		rs, err := checks.LoadRules()
-		if err != nil {
-			return err
+		if flagSSHHost != "" {
+			fmt.Printf("%s[experimental]%s Remote scan flags provided, but remote scanning is not yet implemented.\n", colorCyan, colorReset)
+			fmt.Println("Running a local scan on this host instead.\n")
 		}
 
-		builtIn := len(rs)
-		extra := 0
-		if flagRules != "" {
-			dir := flagRules
-			if !filepath.IsAbs(dir) {
-				if cwd, _ := os.Getwd(); cwd != "" {
-					dir = filepath.Join(cwd, dir)
-				}
-			}
-			if erules, err := checks.LoadRulesFromDir(dir); err == nil && len(erules) > 0 {
-				rs = append(rs, erules...)
-				extra = len(erules)
-			} else if err != nil {
-				fmt.Println("[warn] failed to load extra rules:", err)
+		checks.Verbose = flagVerbose
+
+		// 2) load rules
+		builtInRules, err := checks.LoadBuiltInRules()
+		if err != nil {
+			return fmt.Errorf("load built-in rules: %w", err)
+		}
+
+		var extraRules []checks.Rule
+		if flagRulesDir != "" {
+			extraRules, err = checks.LoadRulesFromDir(flagRulesDir)
+			if err != nil {
+				return fmt.Errorf("load extra rules from %q: %w", flagRulesDir, err)
 			}
 		}
-		fmt.Printf("Loaded %d built-in rules", builtIn)
-		if extra > 0 {
-			fmt.Printf(" + %d external rules", extra)
+
+		allRules := append([]checks.Rule{}, builtInRules...)
+		allRules = append(allRules, extraRules...)
+
+		activeRules := checks.FilterForMode(flagAll, flagCIS, flagPE, allRules)
+		if len(activeRules) == 0 {
+			return fmt.Errorf("no rules selected to run (check your flags)")
+		}
+
+		fmt.Printf("Loaded %d built-in rules", len(builtInRules))
+		if len(extraRules) > 0 {
+			fmt.Printf(" + %d external rules", len(extraRules))
 		}
 		fmt.Println(".")
 
-		// 3) select rules (all == cis for now; we'll add tags/pe later)
-		sel := make([]checks.Rule, 0, len(rs))
-		for _, r := range rs {
-			if flagAll || flagCIS {
-				sel = append(sel, r)
-			}
-		}
-		checks.Verbose = flagVerbose
-		// right before the loop that starts evaluating checks
-		bar := progressbar.NewOptions(len(sel),
-			progressbar.OptionSetDescription("Running checks"),
-			progressbar.OptionShowCount(),
-			progressbar.OptionSetWidth(15),
-		)
-
-		results := make([]checks.CheckResult, 0, len(sel))
-		for _, r := range sel {
-			res := evalWithTimeout(r, flagTimeout)
-			results = append(results, res)
-			bar.Add(1)
-		}
-
-		// 4) evaluate
-		// -------- 4) evaluate (concurrent with per-check timeout) --------
+		// 3) concurrency & timeout defaults
 		if flagJobs <= 0 {
 			flagJobs = runtime.NumCPU()
 		}
-		type job struct{ r checks.Rule }
-		type out struct{ cr checks.CheckResult }
-
-		jobs := make(chan job)
-		outs := make(chan out)
-		var wg sync.WaitGroup
-
-		worker := func() {
-			defer wg.Done()
-			for j := range jobs {
-				outs <- out{cr: evalWithTimeout(j.r, flagTimeout)}
-			}
+		if flagJobs < 1 {
+			flagJobs = 1
 		}
+		if flagTimeout <= 0 {
+			flagTimeout = time.Minute
+		}
+
+		bar := progressbar.NewOptions(
+			len(activeRules),
+			progressbar.OptionSetDescription("Running checks"),
+			progressbar.OptionSetPredictTime(false),
+			progressbar.OptionClearOnFinish(),
+		)
+
+		results := make([]checks.CheckResult, len(activeRules))
+		jobs := make(chan int)
+		var wg sync.WaitGroup
 
 		for i := 0; i < flagJobs; i++ {
 			wg.Add(1)
-			go worker()
+			go func() {
+				defer wg.Done()
+				for idx := range jobs {
+					rule := activeRules[idx]
+					res := checks.EvaluateWithTimeout(rule, flagTimeout)
+					results[idx] = res
+					_ = bar.Add(1)
+				}
+			}()
 		}
+
 		go func() {
-			for _, r := range sel {
-				jobs <- job{r: r}
+			for i := range activeRules {
+				jobs <- i
 			}
 			close(jobs)
 		}()
-		go func() { wg.Wait(); close(outs) }()
 
-		results = make([]checks.CheckResult, 0, len(sel))
-		for o := range outs {
-			results = append(results, o.cr)
-		}
+		wg.Wait()
+		_ = bar.Finish()
 
-		fmt.Printf("Evaluated %d rules.\n", len(results))
-		fmt.Printf("Starting scan… (all=%v, cis=%v, pe=%v, timeout=%s, jobs=%d)\n",
+		fmt.Printf("Evaluated %d rules.\n", len(activeRules))
+		fmt.Printf("Starting scan… (all=%v, cis=%v, pe=%v, timeout=%s, jobs=%d)\n\n",
 			flagAll, flagCIS, flagPE, flagTimeout, flagJobs)
 
-		// 5) compute scores (for terminal + HTML)
-		resIface := make([]scoring.Result, len(results))
+		// 4) scoring
+		printScoreLegend()
+
+		var asResults []scoring.Result
 		for i := range results {
-			resIface[i] = results[i]
+			if results[i].ID == "" {
+				continue
+			}
+			asResults = append(asResults, results[i])
 		}
-		scores := scoring.Compute(resIface)
-		if os.Geteuid() != 0 {
-			fmt.Println("\n[warn] running as non-root: some checks may be incomplete (marked error/na). Try 'sudo redcheck scan ...' for full coverage.")
+
+		scores := scoring.Compute(asResults)
+		printScoreSummary(scores)
+
+		// 5) failed checks (top 5)
+		failed := make([]checks.CheckResult, 0)
+		for _, r := range results {
+			if strings.EqualFold(r.Status, "fail") {
+				failed = append(failed, r)
+			}
 		}
+
+		if len(failed) > 0 {
+			fmt.Println()
+			fmt.Println("Top 5 fixes:")
+
+			sort.Slice(failed, func(i, j int) bool {
+				wi := severityWeight(failed[i].Severity)
+				wj := severityWeight(failed[j].Severity)
+				if wi == wj {
+					// stable-ish by ID
+					return failed[i].ID < failed[j].ID
+				}
+				return wi > wj
+			})
+
+			limit := 5
+			if len(failed) < limit {
+				limit = len(failed)
+			}
+
+			for i := 0; i < limit; i++ {
+				f := failed[i]
+				exp := f.Expected
+				if strings.TrimSpace(exp) == "" {
+					exp = "<see rule>"
+				}
+				fmt.Printf("  • [%s] %s — observed=%q → expected=%q\n",
+					f.Category, f.Title, f.Observed, exp)
+
+				if f.Remediation != "" {
+					fmt.Printf("    Remediation: %s\n", f.Remediation)
+				}
+				if f.FilePath != "" {
+					fmt.Printf("    Config file: %s\n", f.FilePath)
+				}
+			}
+		} else {
+			fmt.Println("No failed checks 🎉")
+		}
+
+		// 6) auto-fix / interactive mode
 		if flagEmitFix != "" {
 			if err := writeFixScript(flagEmitFix, results); err != nil {
 				return err
 			}
-			fmt.Println("Fix script written:", flagEmitFix)
-		}
-		fmt.Println("\nScore interpretation:")
-fmt.Println("  100%   → Fully secure / Compliant")
-fmt.Println("  80–99% → Strong posture")
-fmt.Println("  50–79% → Moderate risk")
-fmt.Println("  20–49% → Weak security")
-fmt.Println("  0–19%  → Critical risk (multiple high-severity failures)")
-fmt.Println("\nNote: Severity (High/Medium/Low) influences the weighted score.")
-
-		// 6) terminal summary
-		fmt.Printf("\nGlobal score: %.1f\n", scores.Global)
-		fmt.Println("Category scores:")
-		for _, cs := range scores.ByCategory {
-			fmt.Printf("  - %-10s : %.1f\n", cs.Category, cs.Score)
-		}
-		// Top 5 fixes (by severity)
-		sevRank := map[string]int{"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
-		fails := make([]checks.CheckResult, 0, len(results))
-		for _, r := range results {
-			if r.Status == "fail" {
-				fails = append(fails, r)
-			}
-		}
-		sort.Slice(fails, func(i, j int) bool {
-			si, sj := sevRank[fails[i].Severity], sevRank[fails[j].Severity]
-			if si != sj {
-				return si < sj
-			}
-			return fails[i].ID < fails[j].ID
-		})
-		if len(fails) > 5 {
-			fails = fails[:5]
-		}
-		if len(fails) > 0 {
-			fmt.Println("\nTop 5 fixes:")
-			for _, f := range fails {
-				fmt.Printf("  • [%s] %s — observed=%q → expected=%q\n", f.Category, f.Title, f.Observed, f.Expected)
-				fmt.Printf("    Remediation: %s\n", f.Remediation)
-			}
-		} else {
-			fmt.Println("\nNo failed checks 🎉")
-		}
-		// capture host + time for the reports
-		h := "unknown"
-		if hv, err := os.Hostname(); err == nil {
-			h = hv
-		}
-		ts := time.Now().UTC().Format(time.RFC3339)
-
-		// 7) write JSON (optional)
-		// JSON
-		if jsonOut != "" {
-			if err := jsonreport.Write(
-				jsonOut, results, h, ts,
-				BuildVersion, BuildCommit, BuildDate,
-			); err != nil {
+			fmt.Printf("Fix script written to: %s\n", flagEmitFix)
+		} else if flagInteractive && len(failed) > 0 {
+			if err := runInteractiveHardening(results); err != nil {
 				return err
 			}
-			fmt.Println("JSON written to:", jsonOut)
 		}
 
-		// HTML
-		if htmlOut != "" {
-			if err := htmlreport.Write(
-				htmlOut, h, ts, scores, results,
-				builtIn, extra, flagJobs, flagTimeout.String(), os.Geteuid() == 0,
-				BuildVersion, BuildCommit, BuildDate,
-			); err != nil {
-				return err
+		// 7) reports (JSON / HTML)
+		hostname, _ := os.Hostname()
+		tstamp := time.Now().UTC().Format(time.RFC3339)
+		version, commit, buildDate := buildVersion()
+
+		if flagJSON != "" {
+			if err := jsonreport.Write(flagJSON, results, hostname, tstamp, version, commit, buildDate); err != nil {
+				return fmt.Errorf("write JSON report: %w", err)
 			}
-			fmt.Println("HTML written to:", htmlOut)
+			fmt.Printf("JSON written to: %s\n", flagJSON)
 		}
+
+		if flagHTML != "" {
+    isRoot := os.Geteuid() == 0
+    if err := htmlreport.Write(
+        flagHTML,
+        hostname,
+        tstamp,
+        scores,
+        results,
+        len(builtInRules),
+        len(extraRules),
+        flagJobs,
+        flagTimeout.String(),  // ✅ FIXED
+        isRoot,
+        version,
+        commit,
+        buildDate,
+    ); err != nil {
+        return fmt.Errorf("write HTML report: %w", err)
+    }
+    fmt.Printf("HTML written to: %s\n", flagHTML)
+}
+
 
 		return nil
 	},
 }
 
-func writeFixScript(path string, results []checks.CheckResult) error {
-	var b strings.Builder
-	b.WriteString("#!/usr/bin/env bash\nset -euo pipefail\n\n# Generated by RedCheck\n")
-	for _, r := range results {
-		if r.Status == "fail" && r.Remediation != "" {
-			b.WriteString(fmt.Sprintf("\n# %s (%s)\n", r.Title, r.ID))
-			b.WriteString(r.Remediation + "\n")
-		}
-	}
-	return os.WriteFile(path, []byte(b.String()), 0755)
-}
-
-// evalWithTimeout runs a single rule with a soft timeout.
-// If it times out, we return an error-style CheckResult with Observed="timeout".
-func evalWithTimeout(r checks.Rule, d time.Duration) checks.CheckResult {
-	if d <= 0 {
-		return checks.Evaluate(r)
-	}
-	ch := make(chan checks.CheckResult, 1)
-	go func() { ch <- checks.Evaluate(r) }()
-	select {
-	case res := <-ch:
-		return res
-	case <-time.After(d):
-		// fabricate a timeout result
-		return checks.CheckResult{
-			ID:          r.ID,
-			Title:       r.Title,
-			Category:    r.Category,
-			Status:      "error",
-			Observed:    "timeout",
-			Expected:    firstExpected(r), // tiny helper below
-			Severity:    r.Severity,
-			Remediation: r.Remediation,
-		}
-	}
-}
-
-// firstExpected joins Expected/ExpectedAll to show something meaningful on timeout.
-func firstExpected(r checks.Rule) string {
-	if r.Expected != "" {
-		return r.Expected
-	}
-	if len(r.ExpectedAll) > 0 {
-		return strings.Join(r.ExpectedAll, ",")
-	}
-	return ""
-}
-
 func init() {
 	rootCmd.AddCommand(scanCmd)
+
 	scanCmd.Flags().BoolVar(&flagAll, "all", false, "Run all checks (default if none specified)")
 	scanCmd.Flags().BoolVar(&flagCIS, "cis", false, "Run CIS benchmark checks only")
 	scanCmd.Flags().BoolVar(&flagPE, "pe", false, "Run recon/priv-esc checks only")
-	scanCmd.Flags().StringVar(&jsonOut, "json", "", "Write results to JSON file")
-	scanCmd.Flags().StringVar(&htmlOut, "html", "", "Write report to HTML file")
-	scanCmd.Flags().DurationVar(&flagTimeout, "timeout", 60*time.Second, "Per-check timeout (e.g., 60s, 2m)")
-	scanCmd.Flags().IntVar(&flagJobs, "jobs", 0, "Number of parallel workers (default: CPU count)")
-	scanCmd.Flags().StringVar(&flagRules, "rules", "", "Directory with extra rule files (*.yml, *.yaml)")
 	scanCmd.Flags().BoolVarP(&flagVerbose, "verbose", "v", false, "Include evidence for failed checks")
+
+	scanCmd.Flags().IntVar(&flagJobs, "jobs", 0, "Number of parallel workers (default: CPU count)")
+	scanCmd.Flags().DurationVar(&flagTimeout, "timeout", time.Minute, "Per-check timeout (e.g., 60s, 2m)")
+
+	scanCmd.Flags().StringVar(&flagJSON, "json", "", "Write results to JSON file")
+	scanCmd.Flags().StringVar(&flagHTML, "html", "", "Write report to HTML file")
+	scanCmd.Flags().StringVar(&flagRulesDir, "rules", "", "Directory with extra rule files (*.yml, *.yaml)")
 	scanCmd.Flags().StringVar(&flagEmitFix, "emit-fix", "", "Write remediation script to this path (no execution)")
+	scanCmd.Flags().BoolVar(&flagInteractive, "interactive", false, "Interactive mode to review and generate a fix.sh script (experimental)")
+
+	// Remote flags – future work
+	scanCmd.Flags().StringVar(&flagSSHHost, "ssh-host", "", "Remote host for future remote scans (not yet implemented)")
+	scanCmd.Flags().StringVar(&flagSSHUser, "ssh-user", "", "SSH user for future remote scans (not yet implemented)")
+	scanCmd.Flags().StringVar(&flagSSHKey, "ssh-key", "", "SSH private key for future remote scans (not yet implemented)")
 }
+
+// ── scoring helpers ────────────────────────────────────────────────────────────
+
+const (
+	colorReset  = "\033[0m"
+	colorRed    = "\033[31m"
+	colorYellow = "\033[33m"
+	colorGreen  = "\033[32m"
+	colorCyan   = "\033[36m"
+)
+
+func colorForScore(s float64) string {
+	switch {
+	case s >= 80:
+		return colorGreen
+	case s >= 50:
+		return colorYellow
+	default:
+		return colorRed
+	}
+}
+
+func printScoreLegend() {
+	fmt.Println("Score interpretation:")
+	fmt.Println("  100%   → Fully secure / Compliant")
+	fmt.Println("  80–99% → Strong posture")
+	fmt.Println("  50–79% → Moderate risk")
+	fmt.Println("  20–49% → Weak security")
+	fmt.Println("  0–19%  → Critical risk (multiple high-severity failures)")
+	fmt.Println()
+	fmt.Println("Note: Severity (High/Medium/Low) influences the weighted score.")
+	fmt.Println()
+}
+
+func printScoreSummary(scores scoring.Scores) {
+	fmt.Printf("Global score: %s%.1f%s\n", colorForScore(scores.Global), scores.Global, colorReset)
+	fmt.Println("Category scores:")
+
+	cats := append([]scoring.CategoryScore(nil), scores.ByCategory...)
+	sort.Slice(cats, func(i, j int) bool { return cats[i].Category < cats[j].Category })
+
+	for _, cs := range cats {
+		fmt.Printf("  - %-10s: %s%.1f%s\n", cs.Category, colorForScore(cs.Score), cs.Score, colorReset)
+	}
+	fmt.Println()
+}
+
+func severityWeight(s string) int {
+	switch strings.ToLower(s) {
+	case "critical":
+		return 3
+	case "high":
+		return 2
+	case "medium":
+		return 1
+	default:
+		return 0
+	}
+}
+
+// ── fix.sh generation & interactive mode ──────────────────────────────────────
+
+func writeFixScript(path string, results []checks.CheckResult) error {
+	script := checks.BuildFixScript(results)
+	if strings.TrimSpace(script) == "" {
+		return fmt.Errorf("no fixes to emit; script would be empty")
+	}
+
+	// Make sure directory exists
+	if dir := filepath.Dir(path); dir != "." && dir != "" {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("create directory %q: %w", dir, err)
+		}
+	}
+
+	if err := os.WriteFile(path, []byte(script), 0o700); err != nil {
+		return fmt.Errorf("write fix script: %w", err)
+	}
+	return nil
+}
+
+func runInteractiveHardening(results []checks.CheckResult) error {
+	failed := make([]checks.CheckResult, 0)
+	for _, r := range results {
+		if strings.EqualFold(r.Status, "fail") {
+			failed = append(failed, r)
+		}
+	}
+	if len(failed) == 0 {
+		fmt.Println("No failed checks to review in interactive mode.")
+		return nil
+	}
+
+	fmt.Println()
+	fmt.Println("Interactive hardening mode (experimental).")
+	fmt.Println("This mode will generate a fix script but WILL NOT execute it automatically.")
+	fmt.Println()
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Generate fix.sh with proposed remediations now? [y/N]: ")
+	line, _ := reader.ReadString('\n')
+	line = strings.TrimSpace(strings.ToLower(line))
+	if line != "y" && line != "yes" {
+		fmt.Println("Skipping fix.sh generation.")
+		return nil
+	}
+
+	path := "fix.sh"
+	if err := writeFixScript(path, results); err != nil {
+		return err
+	}
+	fmt.Printf("Fix script written to: %s\n", path)
+	fmt.Println("Review it carefully before running, especially on production systems.")
+	return nil
+}
+

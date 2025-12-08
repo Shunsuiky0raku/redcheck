@@ -23,3 +23,13 @@ func Execute() {
 func init() {
 	// global/persistent flags go here if we need them later
 }
+var (
+	versionString = "dev"
+	commitHash    = "none"
+	buildDate     = "unknown"
+)
+
+func buildVersion() (string, string, string) {
+	return versionString, commitHash, buildDate
+}
+
