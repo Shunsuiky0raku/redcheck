@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -33,7 +34,7 @@ var (
 	flagEmitFix     string
 	flagInteractive bool
 
-	// Remote scan flags – accepted but not yet implemented (for future work)
+	// Remote scan flags
 	flagSSHHost string
 	flagSSHUser string
 	flagSSHKey  string
@@ -43,14 +44,15 @@ var scanCmd = &cobra.Command{
 	Use:   "scan",
 	Short: "Run CIS and recon/priv-esc checks and produce JSON/HTML reports.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// ── Remote mode: if ssh-host is set, delegate to a remote scan ────────────
+		if flagSSHHost != "" {
+			return runRemoteScan()
+		}
+
+		// ── Local mode (current behaviour) ───────────────────────────────────────
 		// 1) decide what to run
 		if !flagAll && !flagCIS && !flagPE {
 			flagAll = true
-		}
-
-		if flagSSHHost != "" {
-			fmt.Printf("%s[experimental]%s Remote scan flags provided, but remote scanning is not yet implemented.\n", colorCyan, colorReset)
-			fmt.Println("Running a local scan on this host instead.\n")
 		}
 
 		checks.Verbose = flagVerbose
@@ -218,27 +220,26 @@ var scanCmd = &cobra.Command{
 		}
 
 		if flagHTML != "" {
-    isRoot := os.Geteuid() == 0
-    if err := htmlreport.Write(
-        flagHTML,
-        hostname,
-        tstamp,
-        scores,
-        results,
-        len(builtInRules),
-        len(extraRules),
-        flagJobs,
-        flagTimeout.String(),  // ✅ FIXED
-        isRoot,
-        version,
-        commit,
-        buildDate,
-    ); err != nil {
-        return fmt.Errorf("write HTML report: %w", err)
-    }
-    fmt.Printf("HTML written to: %s\n", flagHTML)
-}
-
+			isRoot := os.Geteuid() == 0
+			if err := htmlreport.Write(
+				flagHTML,
+				hostname,
+				tstamp,
+				scores,
+				results,
+				len(builtInRules),
+				len(extraRules),
+				flagJobs,
+				flagTimeout.String(),
+				isRoot,
+				version,
+				commit,
+				buildDate,
+			); err != nil {
+				return fmt.Errorf("write HTML report: %w", err)
+			}
+			fmt.Printf("HTML written to: %s\n", flagHTML)
+		}
 
 		return nil
 	},
@@ -261,10 +262,10 @@ func init() {
 	scanCmd.Flags().StringVar(&flagEmitFix, "emit-fix", "", "Write remediation script to this path (no execution)")
 	scanCmd.Flags().BoolVar(&flagInteractive, "interactive", false, "Interactive mode to review and generate a fix.sh script (experimental)")
 
-	// Remote flags – future work
-	scanCmd.Flags().StringVar(&flagSSHHost, "ssh-host", "", "Remote host for future remote scans (not yet implemented)")
-	scanCmd.Flags().StringVar(&flagSSHUser, "ssh-user", "", "SSH user for future remote scans (not yet implemented)")
-	scanCmd.Flags().StringVar(&flagSSHKey, "ssh-key", "", "SSH private key for future remote scans (not yet implemented)")
+	// Remote flags
+	scanCmd.Flags().StringVar(&flagSSHHost, "ssh-host", "", "Remote host to scan via SSH (requires redcheck on remote PATH)")
+	scanCmd.Flags().StringVar(&flagSSHUser, "ssh-user", "", "SSH user for remote scan (default: current user)")
+	scanCmd.Flags().StringVar(&flagSSHKey, "ssh-key", "", "SSH private key for remote scan (optional)")
 }
 
 // ── scoring helpers ────────────────────────────────────────────────────────────
@@ -380,5 +381,78 @@ func runInteractiveHardening(results []checks.CheckResult) error {
 	fmt.Printf("Fix script written to: %s\n", path)
 	fmt.Println("Review it carefully before running, especially on production systems.")
 	return nil
+}
+
+// ── remote scan via SSH ───────────────────────────────────────────────────────
+
+func runRemoteScan() error {
+	if flagSSHHost == "" {
+		return fmt.Errorf("ssh-host is required for remote scan")
+	}
+
+	user := flagSSHUser
+	if user == "" {
+		user = os.Getenv("USER")
+		if user == "" {
+			user = "root"
+		}
+	}
+
+	dest := fmt.Sprintf("%s@%s", user, flagSSHHost)
+
+	// Build remote `redcheck scan` arguments
+	remoteArgs := []string{"redcheck", "scan"}
+
+	if flagAll {
+		remoteArgs = append(remoteArgs, "--all")
+	}
+	if flagCIS {
+		remoteArgs = append(remoteArgs, "--cis")
+	}
+	if flagPE {
+		remoteArgs = append(remoteArgs, "--pe")
+	}
+	if flagVerbose {
+		remoteArgs = append(remoteArgs, "--verbose")
+	}
+	if flagJSON != "" {
+		remoteArgs = append(remoteArgs, "--json", flagJSON)
+	}
+	if flagHTML != "" {
+		remoteArgs = append(remoteArgs, "--html", flagHTML)
+	}
+	if flagRulesDir != "" {
+		remoteArgs = append(remoteArgs, "--rules", flagRulesDir)
+	}
+	if flagEmitFix != "" {
+		remoteArgs = append(remoteArgs, "--emit-fix", flagEmitFix)
+	}
+	if flagInteractive {
+		remoteArgs = append(remoteArgs, "--interactive")
+	}
+	if flagJobs > 0 {
+		remoteArgs = append(remoteArgs, "--jobs", fmt.Sprintf("%d", flagJobs))
+	}
+	if flagTimeout > 0 {
+		remoteArgs = append(remoteArgs, "--timeout", flagTimeout.String())
+	}
+
+	fmt.Printf("%s[remote]%s Connecting to %s\n", colorCyan, colorReset, dest)
+	fmt.Printf("%s[remote]%s Running: %s\n\n", colorCyan, colorReset, strings.Join(remoteArgs, " "))
+
+	// Build ssh command: ssh [-i key] user@host redcheck scan ...
+	sshArgs := []string{}
+	if flagSSHKey != "" {
+		sshArgs = append(sshArgs, "-i", flagSSHKey)
+	}
+	sshArgs = append(sshArgs, dest)
+	sshArgs = append(sshArgs, remoteArgs...)
+
+	cmd := exec.Command("ssh", sshArgs...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	return cmd.Run()
 }
 
