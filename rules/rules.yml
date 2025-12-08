@@ -1,0 +1,9 @@
+- id: "TEST-1"
+  title: "Test rule"
+  category: "Services"
+  fact: "svc.sshd_state"
+  expected: "running"
+  severity: "Low"
+  remediation: "Ensure sshd is running."
+  tags: ["custom"]
+

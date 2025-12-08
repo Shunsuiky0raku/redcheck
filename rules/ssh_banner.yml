@@ -1,8 +1,9 @@
-id: "CIS-5.1.14-ext"
-title: "SSH Banner configured (external)"
-category: "Auth"
-fact: "ssh.banner"
-expected: "present"
-severity: "Low"
-remediation: "Set 'Banner /etc/issue.net' and reload sshd."
+- id: "EXTRA-SSH-BANNER"
+  title: "SSH Banner exists"
+  category: "Auth"
+  fact: "ssh.banner"
+  expected: "present"
+  severity: "Low"
+  remediation: "Configure an SSH banner in /etc/issue.net and reload sshd."
+  tags: ["extra","ssh"]
 
