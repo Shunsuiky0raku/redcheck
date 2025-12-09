@@ -2,24 +2,39 @@ package checks
 
 import (
 	"context"
-	"strings"
 	"time"
 )
 
-// EvaluateWithTimeout runs a rule with a timeout.
+// EvaluateWithTimeout runs a single rule with a timeout and dynamic fact collection.
 func EvaluateWithTimeout(rule Rule, timeout time.Duration) CheckResult {
+	// Per-rule timeout guard (mainly for slower fact collectors / future exec checks)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	resultCh := make(chan CheckResult, 1)
 
 	go func() {
-		// FIX: call EvaluateRule instead of undefined Evaluate()
-		resultCh <- EvaluateRule(rule, nil)
+		// 1) Collect facts for THIS rule (fact-centric engine)
+		facts, evidence := gatherFactsForRule(rule, timeout)
+
+		// 2) Evaluate rule against collected facts
+		res := EvaluateRule(rule, facts)
+
+		// 3) Attach evidence if verbose mode is enabled
+		if Verbose && evidence != "" && res.Evidence == "" {
+			res.Evidence = evidence
+		}
+
+		select {
+		case resultCh <- res:
+		case <-ctx.Done():
+			// context timed out, do nothing; caller will handle timeout
+		}
 	}()
 
 	select {
 	case <-ctx.Done():
+		// Hard timeout hit – mark as error
 		return CheckResult{
 			ID:       rule.ID,
 			Title:    rule.Title,
@@ -34,12 +49,17 @@ func EvaluateWithTimeout(rule Rule, timeout time.Duration) CheckResult {
 	}
 }
 
-// MAIN EVALUATION LOGIC
+// MAIN EVALUATION LOGIC (pure comparison; facts are already resolved)
 func EvaluateRule(rule Rule, facts map[string]string) CheckResult {
-
 	observed := ""
 	if facts != nil {
 		observed = facts[rule.Fact]
+	}
+
+	// If we have files[] but no single FilePath, pick the first one
+	filePath := rule.FilePath
+	if filePath == "" && len(rule.Files) > 0 {
+		filePath = rule.Files[0]
 	}
 
 	result := CheckResult{
@@ -50,29 +70,24 @@ func EvaluateRule(rule Rule, facts map[string]string) CheckResult {
 		Observed:    observed,
 		Expected:    rule.Expected,
 		Remediation: rule.Remediation,
-		FilePath:    rule.FilePath,
+		FilePath:    filePath,
 		Tags:        rule.Tags,
 	}
 
-	// ALL-OF rules
+	// ALL-OF rules (expected_all)
 	if len(rule.ExpectedAll) > 0 {
-		missing := []string{}
-		for _, want := range rule.ExpectedAll {
-			if !strings.Contains(observed, want) {
-				missing = append(missing, want)
-			}
-		}
-
+		missing := evaluateAllOf(observed, rule.ExpectedAll)
 		if len(missing) == 0 {
 			result.Status = "pass"
 		} else {
 			result.Status = "fail"
-			result.Expected = strings.Join(rule.ExpectedAll, ",")
+			// For ALL-OF rules, Expected is a comma-joined list
+			result.Expected = joinExpected(rule.ExpectedAll)
 		}
 		return result
 	}
 
-	// Simple rule
+	// Simple rule: if no explicit expectation, treat as "info" pass
 	if rule.Expected == "" {
 		result.Status = "pass"
 		return result
@@ -86,4 +101,3 @@ func EvaluateRule(rule Rule, facts map[string]string) CheckResult {
 
 	return result
 }
-

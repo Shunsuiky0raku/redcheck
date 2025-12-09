@@ -2,7 +2,7 @@
   title: "Test rule"
   category: "Services"
   fact: "svc.sshd_state"
-  expected: "running"
+  expected: "active"
   severity: "Low"
   remediation: "Ensure sshd is running."
   tags: ["custom"]

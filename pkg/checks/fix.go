@@ -9,12 +9,12 @@ import (
 
 // BuildFixScript generates a semi-automatic Bash remediation script.
 //
-// - Only includes rules with Status == "fail" from the *current* scan
-//   (so it automatically respects --all / --cis / --pe).
-// - Sorts by severity (Critical → High → Medium → Low) then by rule ID.
-// - For “safe-ish” rules, emits real commands guarded by a y/N prompt.
-// - For dangerous rules (UID 0 abuse, SUID cleanup, etc.), emits guidance
-//   and TODOs instead of destructive automation.
+//   - Only includes rules with Status == "fail" from the *current* scan
+//     (so it automatically respects --all / --cis / --pe).
+//   - Sorts by severity (Critical → High → Medium → Low) then by rule ID.
+//   - For “safe-ish” rules, emits real commands guarded by a y/N prompt.
+//   - For dangerous rules (UID 0 abuse, SUID cleanup, etc.), emits guidance
+//     and TODOs instead of destructive automation.
 func BuildFixScript(results []CheckResult, w io.Writer) error {
 	// Header
 	fmt.Fprintln(w, "#!/bin/bash")
@@ -284,4 +284,3 @@ func emitRuleFixBlock(w io.Writer, id string) {
 		fmt.Fprintln(w, `  echo "       Please follow the guidance from the redcheck report manually."`)
 	}
 }
-

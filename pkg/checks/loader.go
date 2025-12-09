@@ -9,9 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//
 // Load built-in rules from pkg/checks/rules.yaml
-//
 func LoadBuiltInRules() ([]Rule, error) {
 	data, err := os.ReadFile("pkg/checks/rules.yaml")
 	if err != nil {
@@ -26,13 +24,11 @@ func LoadBuiltInRules() ([]Rule, error) {
 	return rules, nil
 }
 
-//
 // LoadRulesFromDir – loads rules from a directory of .yml/.yaml files
 //
 // Supports:
 //   - A file containing:  [ { rule }, { rule } ]
 //   - A file containing:  { rule }
-//
 func LoadRulesFromDir(dir string) ([]Rule, error) {
 	var out []Rule
 
@@ -79,4 +75,3 @@ func LoadRulesFromDir(dir string) ([]Rule, error) {
 
 	return out, err
 }
-

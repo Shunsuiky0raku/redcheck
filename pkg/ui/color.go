@@ -12,4 +12,3 @@ const (
 func Color(s, c string) string {
 	return c + s + Reset
 }
-

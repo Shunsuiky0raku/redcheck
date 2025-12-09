@@ -331,59 +331,58 @@ func severityWeight(s string) int {
 // ── fix.sh generation & interactive mode ──────────────────────────────────────
 
 func writeFixScript(path string, results []checks.CheckResult) error {
-    f, err := os.Create(path)
-    if err != nil {
-        return fmt.Errorf("open fix.sh: %w", err)
-    }
-    defer f.Close()
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("open fix.sh: %w", err)
+	}
+	defer f.Close()
 
-    // ► FIX: Call BuildFixScript with an io.Writer
-    if err := checks.BuildFixScript(results, f); err != nil {
-        return fmt.Errorf("build fix script: %w", err)
-    }
+	// ► FIX: Call BuildFixScript with an io.Writer
+	if err := checks.BuildFixScript(results, f); err != nil {
+		return fmt.Errorf("build fix script: %w", err)
+	}
 
-    if err := os.Chmod(path, 0o700); err != nil {
-        return fmt.Errorf("chmod fix.sh: %w", err)
-    }
-    return nil
+	if err := os.Chmod(path, 0o700); err != nil {
+		return fmt.Errorf("chmod fix.sh: %w", err)
+	}
+	return nil
 }
 
 func runInteractiveHardening(results []checks.CheckResult) error {
-    failed := make([]checks.CheckResult, 0)
-    for _, r := range results {
-        if strings.EqualFold(r.Status, "fail") {
-            failed = append(failed, r)
-        }
-    }
-    if len(failed) == 0 {
-        fmt.Println("No failed checks to review in interactive mode.")
-        return nil
-    }
+	failed := make([]checks.CheckResult, 0)
+	for _, r := range results {
+		if strings.EqualFold(r.Status, "fail") {
+			failed = append(failed, r)
+		}
+	}
+	if len(failed) == 0 {
+		fmt.Println("No failed checks to review in interactive mode.")
+		return nil
+	}
 
-    fmt.Println()
-    fmt.Println("Interactive hardening mode (experimental).")
-    fmt.Println("This mode will generate a fix script but WILL NOT execute it automatically.")
-    fmt.Println()
+	fmt.Println()
+	fmt.Println("Interactive hardening mode (experimental).")
+	fmt.Println("This mode will generate a fix script but WILL NOT execute it automatically.")
+	fmt.Println()
 
-    reader := bufio.NewReader(os.Stdin)
-    fmt.Print("Generate fix.sh with proposed remediations now? [y/N]: ")
-    line, _ := reader.ReadString('\n')
-    line = strings.TrimSpace(strings.ToLower(line))
-    if line != "y" && line != "yes" {
-        fmt.Println("Skipping fix.sh generation.")
-        return nil
-    }
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Generate fix.sh with proposed remediations now? [y/N]: ")
+	line, _ := reader.ReadString('\n')
+	line = strings.TrimSpace(strings.ToLower(line))
+	if line != "y" && line != "yes" {
+		fmt.Println("Skipping fix.sh generation.")
+		return nil
+	}
 
-    // ► FIX: Write using the corrected function
-    if err := writeFixScript("fix.sh", results); err != nil {
-        return fmt.Errorf("interactive: %w", err)
-    }
+	// ► FIX: Write using the corrected function
+	if err := writeFixScript("fix.sh", results); err != nil {
+		return fmt.Errorf("interactive: %w", err)
+	}
 
-    fmt.Println("Fix script written to fix.sh")
-    fmt.Println("Review it carefully before running, especially on production systems.")
-    return nil
+	fmt.Println("Fix script written to fix.sh")
+	fmt.Println("Review it carefully before running, especially on production systems.")
+	return nil
 }
-
 
 // ── remote scan via SSH ───────────────────────────────────────────────────────
 
@@ -457,4 +456,3 @@ func runRemoteScan() error {
 
 	return cmd.Run()
 }
-
