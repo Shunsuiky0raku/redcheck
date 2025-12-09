@@ -8,10 +8,12 @@ import (
 )
 
 // BuildFixScript generates a semi-automatic Bash remediation script.
-// - It only includes rules with Status == "fail".
-// - It sorts them by severity (Critical → High → Medium → Low).
-// - For "safe-ish" rules, it emits real commands guarded by a y/N prompt.
-// - For very risky rules (UID 0, SUID cleanup etc.), it prints guidance
+//
+// - Only includes rules with Status == "fail" from the *current* scan
+//   (so it automatically respects --all / --cis / --pe).
+// - Sorts by severity (Critical → High → Medium → Low) then by rule ID.
+// - For “safe-ish” rules, emits real commands guarded by a y/N prompt.
+// - For dangerous rules (UID 0 abuse, SUID cleanup, etc.), emits guidance
 //   and TODOs instead of destructive automation.
 func BuildFixScript(results []CheckResult, w io.Writer) error {
 	// Header
@@ -27,17 +29,18 @@ func BuildFixScript(results []CheckResult, w io.Writer) error {
 	// Filter only failed checks
 	var failed []CheckResult
 	for _, r := range results {
-		if strings.ToLower(r.Status) == "fail" {
+		if strings.EqualFold(r.Status, "fail") {
 			failed = append(failed, r)
 		}
 	}
 
 	if len(failed) == 0 {
-		fmt.Fprintln(w, `echo "No failing checks detected. Nothing to fix."`)
+		fmt.Fprintln(w, `echo "No failing checks detected."`)
+		fmt.Fprintln(w, `echo "Nothing to fix."`)
 		return nil
 	}
 
-	// Sort by severity, then by ID
+	// Sort by severity (Critical → High → Medium → Low) then by ID
 	severityRank := map[string]int{
 		"Critical": 0,
 		"High":     1,
@@ -47,8 +50,8 @@ func BuildFixScript(results []CheckResult, w io.Writer) error {
 	}
 
 	sort.Slice(failed, func(i, j int) bool {
-		si := severityRank[strings.Title(strings.ToLower(failed[i].Severity))]
-		sj := severityRank[strings.Title(strings.ToLower(failed[j].Severity))]
+		si := severityRank[strings.Title(strings.ToLower(strings.TrimSpace(failed[i].Severity)))]
+		sj := severityRank[strings.Title(strings.ToLower(strings.TrimSpace(failed[j].Severity)))]
 		if si != sj {
 			return si < sj
 		}
@@ -65,30 +68,52 @@ func BuildFixScript(results []CheckResult, w io.Writer) error {
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "echo")
 		fmt.Fprintln(w, `echo "============================================================"`)
-		fmt.Fprintf(w, "echo \"Rule: %s (%s)\"\n", escapeForDoubleQuotes(title), escapeForDoubleQuotes(id))
+		fmt.Fprintf(
+			w,
+			"echo \"Rule     : %s (%s)\"\n",
+			escapeForDoubleQuotes(title),
+			escapeForDoubleQuotes(id),
+		)
+
 		if category != "" {
-			fmt.Fprintf(w, "echo \"Category : %s\"\n", escapeForDoubleQuotes(category))
+			fmt.Fprintf(
+				w,
+				"echo \"Category : %s\"\n",
+				escapeForDoubleQuotes(category),
+			)
 		}
+
 		if expected != "" {
-			fmt.Fprintf(w, "echo \"Expected : %s\"\n", escapeForDoubleQuotes(expected))
+			fmt.Fprintf(
+				w,
+				"echo \"Expected : %s\"\n",
+				escapeForDoubleQuotes(expected),
+			)
 		}
+
 		if r.Remediation != "" {
-			fmt.Fprintf(w, "echo \"Remediation (summary): %s\"\n", escapeForDoubleQuotes(r.Remediation))
+			fmt.Fprintf(
+				w,
+				"echo \"Remediation (summary): %s\"\n",
+				escapeForDoubleQuotes(r.Remediation),
+			)
 		}
-		fmt.Fprintln(w, "read -r -p \"Apply this remediation? [y/N]: \" ANSW")
-		fmt.Fprintln(w, "if [[ \"$ANSW\" =~ ^[Yy]$ ]]; then")
 
-		// Emit rule-specific commands
+		fmt.Fprintln(w, `read -r -p "Apply this remediation? [y/N]: " ANSW`)
+		fmt.Fprintln(w, `if [[ "$ANSW" =~ ^[Yy]$ ]]; then`)
 		emitRuleFixBlock(w, id)
-
 		fmt.Fprintln(w, "else")
-		fmt.Fprintf(w, "  echo \"[SKIP] Skipped fix for %s\"\n", escapeForDoubleQuotes(id))
+		fmt.Fprintf(
+			w,
+			"  echo \"[SKIP] Skipped fix for %s\"\n",
+			escapeForDoubleQuotes(id),
+		)
 		fmt.Fprintln(w, "fi")
 	}
 
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, `echo "All interactive fixes processed."`)
-	fmt.Fprintln(w, `echo "Re-run: sudo redcheck scan --all to verify the new posture."`)
+	fmt.Fprintln(w, `echo "Re-run: sudo ./redcheck scan --all to verify the new posture."`)
 
 	return nil
 }
@@ -101,22 +126,30 @@ func escapeForDoubleQuotes(s string) string {
 }
 
 // emitRuleFixBlock emits the *shell* commands implementing the fix for a given rule ID.
-// All commands are wrapped inside the if [[ "$ANSW" =~ ... ]] guard by BuildFixScript.
+// All commands are wrapped inside the if [[ "$ANSW" =~ ... ]] guard in BuildFixScript.
 func emitRuleFixBlock(w io.Writer, id string) {
 	switch id {
 
-	// --- Crypto policy -------------------------------------------------------
+	// ---------------------------------------------------------------------
+	// Crypto policy
+	// ---------------------------------------------------------------------
+
 	case "CIS-1.6.1":
-		fmt.Fprintln(w, "  echo \"  -> Setting system crypto policy to DEFAULT (non-LEGACY)...\"")
+		// Crypto policy not LEGACY / ensure modern policy
+		fmt.Fprintln(w, `  echo " -> Setting system crypto policy to DEFAULT (non-LEGACY)..."`)
 		fmt.Fprintln(w, "  if command -v update-crypto-policies >/dev/null 2>&1; then")
 		fmt.Fprintln(w, "    update-crypto-policies --set DEFAULT || echo \"[WARN] update-crypto-policies failed\"")
 		fmt.Fprintln(w, "  else")
 		fmt.Fprintln(w, "    echo \"[WARN] update-crypto-policies not found; configure crypto policy manually.\"")
 		fmt.Fprintln(w, "  fi")
 
-	// --- SSH hardening -------------------------------------------------------
-	case "CIS-5.1.1": // Disable root login over SSH
-		fmt.Fprintln(w, "  echo \"  -> Disabling root login over SSH...\"")
+	// ---------------------------------------------------------------------
+	// SSH hardening
+	// ---------------------------------------------------------------------
+
+	case "CIS-5.1.1":
+		// Disable root login over SSH
+		fmt.Fprintln(w, `  echo " -> Disabling root login over SSH..."`)
 		fmt.Fprintln(w, "  if [ -f /etc/ssh/sshd_config ]; then")
 		fmt.Fprintln(w, "    if grep -qE '^\\s*PermitRootLogin' /etc/ssh/sshd_config; then")
 		fmt.Fprintln(w, "      sed -i 's/^\\s*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config")
@@ -128,8 +161,9 @@ func emitRuleFixBlock(w io.Writer, id string) {
 		fmt.Fprintln(w, "    echo \"[WARN] /etc/ssh/sshd_config not found; adjust SSH configuration manually.\"")
 		fmt.Fprintln(w, "  fi")
 
-	case "CIS-5.1.6": // X11Forwarding disabled
-		fmt.Fprintln(w, "  echo \"  -> Disabling X11Forwarding in SSH...\"")
+	case "CIS-5.1.6":
+		// X11Forwarding disabled
+		fmt.Fprintln(w, `  echo " -> Disabling X11Forwarding in SSH..."`)
 		fmt.Fprintln(w, "  if [ -f /etc/ssh/sshd_config ]; then")
 		fmt.Fprintln(w, "    if grep -qE '^\\s*X11Forwarding' /etc/ssh/sshd_config; then")
 		fmt.Fprintln(w, "      sed -i 's/^\\s*X11Forwarding.*/X11Forwarding no/' /etc/ssh/sshd_config")
@@ -141,10 +175,14 @@ func emitRuleFixBlock(w io.Writer, id string) {
 		fmt.Fprintln(w, "    echo \"[WARN] /etc/ssh/sshd_config not found; adjust SSH configuration manually.\"")
 		fmt.Fprintln(w, "  fi")
 
-	case "CIS-5.1.14": // SSH banner configured
-		fmt.Fprintln(w, "  echo \"  -> Ensuring SSH Banner is configured...\"")
+	case "CIS-5.1.14":
+		// SSH banner configured
+		fmt.Fprintln(w, `  echo " -> Ensuring SSH banner is configured..."`)
 		fmt.Fprintln(w, "  if [ ! -f /etc/issue.net ]; then")
-		fmt.Fprintln(w, "    echo \"Authorized access only. Unauthorized use is prohibited.\" > /etc/issue.net")
+		fmt.Fprintln(w, "    cat <<'EOF' >/etc/issue.net")
+		fmt.Fprintln(w, "Authorized access only.")
+		fmt.Fprintln(w, "Unauthorized use is prohibited.")
+		fmt.Fprintln(w, "EOF")
 		fmt.Fprintln(w, "  fi")
 		fmt.Fprintln(w, "  if [ -f /etc/ssh/sshd_config ]; then")
 		fmt.Fprintln(w, "    if grep -qE '^\\s*Banner' /etc/ssh/sshd_config; then")
@@ -157,9 +195,13 @@ func emitRuleFixBlock(w io.Writer, id string) {
 		fmt.Fprintln(w, "    echo \"[WARN] /etc/ssh/sshd_config not found; adjust SSH configuration manually.\"")
 		fmt.Fprintln(w, "  fi")
 
-	// --- sudo hardening ------------------------------------------------------
-	case "CIS-5.2.2": // sudo uses pty
-		fmt.Fprintln(w, "  echo \"  -> Enforcing sudo use_pty via /etc/sudoers.d/redcheck-use-pty...\"")
+	// ---------------------------------------------------------------------
+	// sudo hardening
+	// ---------------------------------------------------------------------
+
+	case "CIS-5.2.2":
+		// sudo uses pty
+		fmt.Fprintln(w, `  echo " -> Enforcing sudo use_pty via /etc/sudoers.d/redcheck-use-pty..."`)
 		fmt.Fprintln(w, "  if [ -d /etc/sudoers.d ]; then")
 		fmt.Fprintln(w, "    echo 'Defaults use_pty' > /etc/sudoers.d/redcheck-use-pty")
 		fmt.Fprintln(w, "    chmod 440 /etc/sudoers.d/redcheck-use-pty")
@@ -168,8 +210,9 @@ func emitRuleFixBlock(w io.Writer, id string) {
 		fmt.Fprintln(w, "    echo \"[WARN] /etc/sudoers.d not present; configure sudoers manually with visudo.\"")
 		fmt.Fprintln(w, "  fi")
 
-	case "CIS-5.2.3": // sudo has logfile
-		fmt.Fprintln(w, "  echo \"  -> Enabling sudo logfile via /etc/sudoers.d/redcheck-sudo-log...\"")
+	case "CIS-5.2.3":
+		// sudo has logfile
+		fmt.Fprintln(w, `  echo " -> Enabling sudo logfile via /etc/sudoers.d/redcheck-sudo-log..."`)
 		fmt.Fprintln(w, "  if [ -d /etc/sudoers.d ]; then")
 		fmt.Fprintln(w, "    echo 'Defaults logfile=\"/var/log/sudo.log\"' > /etc/sudoers.d/redcheck-sudo-log")
 		fmt.Fprintln(w, "    chmod 440 /etc/sudoers.d/redcheck-sudo-log")
@@ -179,32 +222,44 @@ func emitRuleFixBlock(w io.Writer, id string) {
 		fmt.Fprintln(w, "    echo \"[WARN] /etc/sudoers.d not present; configure sudoers manually with visudo.\"")
 		fmt.Fprintln(w, "  fi")
 
-	// --- Only root has UID 0 -------------------------------------------------
+	// ---------------------------------------------------------------------
+	// Only root has UID 0  (HIGH RISK – guidance only)
+	// ---------------------------------------------------------------------
+
 	case "CIS-5.4.1":
-		fmt.Fprintln(w, "  echo \"[CAUTION] Fixing UID 0 accounts is HIGH RISK and requires manual review.\"")
-		fmt.Fprintln(w, "  echo \"Listing accounts with UID 0 (excluding root):\"")
-		fmt.Fprintln(w, "  awk -F: '($3 == 0 && $1 != \"root\"){print $1\":\"$3\":\"$7}' /etc/passwd || true")
-		fmt.Fprintln(w, "  echo \"Review the above accounts and adjust with 'usermod' or 'vipw' manually.\"")
+		fmt.Fprintln(w, `  echo "[CAUTION] Fixing UID 0 accounts is HIGH RISK and requires manual review."`)
+		fmt.Fprintln(w, `  echo "Listing accounts with UID 0 (excluding root):"`)
+		fmt.Fprintln(w, `  awk -F: '($3 == 0 && $1 != "root"){print $1 ":" $3 ":" $7}' /etc/passwd || true`)
+		fmt.Fprintln(w, `  echo "Review the above accounts and adjust with 'usermod' or 'vipw' manually."`)
 
-	// --- Recon / PE rules ----------------------------------------------------
-	case "RC-1.1": // Unexpected SUID/SGID files
-		fmt.Fprintln(w, "  echo \"[INFO] Listing non-standard SUID/SGID files for manual review...\"")
+	// ---------------------------------------------------------------------
+	// Recon / PE rules
+	// ---------------------------------------------------------------------
+
+	case "RC-1.1":
+		// Unexpected SUID/SGID files
+		fmt.Fprintln(w, `  echo "[INFO] Listing non-standard SUID/SGID files for manual review..."`)
 		fmt.Fprintln(w, "  find / -xdev \\( -perm -4000 -o -perm -2000 \\) -type f 2>/dev/null | sort | tee /root/redcheck_suid_sgid.txt")
-		fmt.Fprintln(w, "  echo \"Review /root/redcheck_suid_sgid.txt and remove unsafe entries manually.\"")
+		fmt.Fprintln(w, `  echo "Review /root/redcheck_suid_sgid.txt and remove unsafe entries manually."`)
 
-	case "RC-1.2": // World-writable dirs in PATH
-		fmt.Fprintln(w, "  echo \"[INFO] Listing world-writable directories in PATH for manual review...\"")
+	case "RC-1.2":
+		// World-writable dirs in PATH
+		fmt.Fprintln(w, `  echo "[INFO] Listing world-writable directories in PATH for manual review..."`)
 		fmt.Fprintln(w, "  echo \"$PATH\" | tr ':' '\\n' | while read -r d; do")
 		fmt.Fprintln(w, "    [ -z \"$d\" ] && continue")
 		fmt.Fprintln(w, "    if [ -d \"$d\" ] && [ -w \"$d\" ] && [ ! -O \"$d\" ]; then")
 		fmt.Fprintln(w, "      ls -ld \"$d\"")
 		fmt.Fprintln(w, "    fi")
 		fmt.Fprintln(w, "  done")
-		fmt.Fprintln(w, "  echo \"Adjust permissions or remove unsafe PATH entries manually.\"")
+		fmt.Fprintln(w, `  echo "Adjust permissions or remove unsafe PATH entries manually."`)
 
-	// --- firewalld rules -----------------------------------------------------
-	case "CIS-4.1.1": // firewalld installed
-		fmt.Fprintln(w, "  echo \"  -> Installing firewalld using common package managers (dnf/yum/apt)...\"")
+	// ---------------------------------------------------------------------
+	// firewalld rules
+	// ---------------------------------------------------------------------
+
+	case "CIS-4.1.1":
+		// firewalld installed
+		fmt.Fprintln(w, `  echo " -> Installing firewalld using common package managers (dnf/yum/apt)..."`)
 		fmt.Fprintln(w, "  if command -v dnf >/dev/null 2>&1; then")
 		fmt.Fprintln(w, "    dnf install -y firewalld || echo \"[WARN] dnf install firewalld failed\"")
 		fmt.Fprintln(w, "  elif command -v yum >/dev/null 2>&1; then")
@@ -215,14 +270,18 @@ func emitRuleFixBlock(w io.Writer, id string) {
 		fmt.Fprintln(w, "    echo \"[WARN] Unsupported package manager; install firewalld manually.\"")
 		fmt.Fprintln(w, "  fi")
 
-	case "CIS-4.1.2": // firewalld enabled and active
-		fmt.Fprintln(w, "  echo \"  -> Enabling and starting firewalld...\"")
+	case "CIS-4.1.2":
+		// firewalld enabled and active
+		fmt.Fprintln(w, `  echo " -> Enabling and starting firewalld..."`)
 		fmt.Fprintln(w, "  systemctl enable --now firewalld || echo \"[WARN] Failed to enable/start firewalld; investigate manually.\"")
 
-	// --- default / generic ---------------------------------------------------
+	// ---------------------------------------------------------------------
+	// Default / unimplemented rules
+	// ---------------------------------------------------------------------
+
 	default:
-		fmt.Fprintln(w, "  echo \"[INFO] No automatic remediation implemented for this rule yet.\"")
-		fmt.Fprintln(w, "  echo \"       Please follow the guidance from the redcheck report manually.\"")
+		fmt.Fprintln(w, `  echo "[INFO] No automatic remediation implemented for this rule yet."`)
+		fmt.Fprintln(w, `  echo "       Please follow the guidance from the redcheck report manually."`)
 	}
 }
 
