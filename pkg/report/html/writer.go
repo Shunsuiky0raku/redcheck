@@ -46,9 +46,23 @@ code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
 .header-meta{margin:8px 0;color:#444;font-size:13px}
 .warn{background:#fff3cd;padding:10px;border-left:4px solid #ffc107;border-radius:6px;margin:8px 0}
 button{padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#fafafa;cursor:pointer}
+button:hover{background:#e8e8e8}
+button.active{background:#4caf50;color:white;border-color:#4caf50}
+select{padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#fafafa;cursor:pointer}
+.controls{display:flex;gap:12px;margin:12px 0;flex-wrap:wrap;align-items:center}
+.control-group{display:flex;gap:8px;align-items:center}
+.fix-item{margin-bottom:8px;padding:8px;border-left:3px solid transparent;transition:all 0.2s}
+.fix-item.hidden{display:none}
+.category-badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:4px;font-weight:normal}
+.cat-FS_Perms{background:#e3f2fd;color:#1976d2} .cat-Services{background:#f3e5f5;color:#7b1fa2}
+.cat-Auth{background:#fff3e0;color:#f57c00} .cat-Privileges{background:#ffebee;color:#c62828}
+.cat-Recon{background:#e8f5e9;color:#388e3c} .cat-Audit{background:#f1f8e9;color:#689f38}
 </style>
 
 <script>
+let currentFilter = 'all';
+let currentSort = 'severity';
+
 function copyFixes(){
   const items = Array.from(document.querySelectorAll('td.rem')).map(td => td.innerText.trim());
   const seen = new Set();
@@ -57,6 +71,79 @@ function copyFixes(){
   navigator.clipboard.writeText(cmds.join('\n'))
     .then(()=>alert('All remediations copied to clipboard.'))
     .catch(()=>alert('Copy failed (clipboard not available).'));
+}
+
+function copyTopFixes(){
+  const visibleItems = Array.from(document.querySelectorAll('.fix-item:not(.hidden)'));
+  const cmds = visibleItems.map(item => {
+    const remText = item.querySelector('.fix-remediation')?.innerText || '';
+    return remText.replace(/^Remediation:\s*/i, '').trim();
+  }).filter(x => x);
+  if (cmds.length === 0) { alert('No remediation commands to copy from visible fixes.'); return; }
+  navigator.clipboard.writeText(cmds.join('\n'))
+    .then(()=>alert('Copied ' + cmds.length + ' remediation command(s) to clipboard.'))
+    .catch(()=>alert('Copy failed (clipboard not available).'));
+}
+
+function filterFixes(category){
+  currentFilter = category;
+  const items = document.querySelectorAll('.fix-item');
+  items.forEach(item => {
+    if(category === 'all' || item.dataset.category === category){
+      item.classList.remove('hidden');
+    } else {
+      item.classList.add('hidden');
+    }
+  });
+  updateVisibleCount();
+}
+
+function sortFixes(method){
+  currentSort = method;
+  const container = document.getElementById('top-fixes-container');
+  const items = Array.from(document.querySelectorAll('.fix-item'));
+  
+  items.sort((a, b) => {
+    if(method === 'severity'){
+      const sevOrder = {Critical: 0, High: 1, Medium: 2, Low: 3};
+      const sevA = sevOrder[a.dataset.severity] || 999;
+      const sevB = sevOrder[b.dataset.severity] || 999;
+      if(sevA !== sevB) return sevA - sevB;
+      return a.dataset.title.localeCompare(b.dataset.title);
+    } else if(method === 'category'){
+      const catCmp = a.dataset.category.localeCompare(b.dataset.category);
+      if(catCmp !== 0) return catCmp;
+      return a.dataset.title.localeCompare(b.dataset.title);
+    } else if(method === 'ease'){
+      const easeOrder = {low: 0, medium: 1, high: 2};
+      const easeA = easeOrder[a.dataset.ease] || 1;
+      const easeB = easeOrder[b.dataset.ease] || 1;
+      if(easeA !== easeB) return easeA - easeB;
+      return a.dataset.title.localeCompare(b.dataset.title);
+    }
+    return 0;
+  });
+  
+  items.forEach(item => container.appendChild(item));
+  updateSortButtons(method);
+}
+
+function updateSortButtons(activeMethod){
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if(btn.dataset.sort === activeMethod){
+      btn.classList.add('active');
+    }
+  });
+}
+
+function updateVisibleCount(){
+  const visible = document.querySelectorAll('.fix-item:not(.hidden)').length;
+  const total = document.querySelectorAll('.fix-item').length;
+  const counter = document.getElementById('visible-count');
+  if(counter){
+    counter.innerText = 'Showing ' + visible + ' of ' + total + ' fixes';
+  }
 }
 </script>
 
@@ -90,18 +177,50 @@ function copyFixes(){
 
 {{if .TopFixes}}
 <div class="card">
-  <h2>Top 5 fixes</h2>
+  <h2>Top Fixes</h2>
+  <div class="controls">
+    <div class="control-group">
+      <label for="category-filter"><b>Filter by Category:</b></label>
+      <select id="category-filter" onchange="filterFixes(this.value)">
+        <option value="all">All Categories</option>
+        <option value="FS_Perms">FS_Perms</option>
+        <option value="Services">Services</option>
+        <option value="Auth">Auth</option>
+        <option value="Privileges">Privileges</option>
+        <option value="Recon">Recon</option>
+        <option value="Audit">Audit</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label><b>Sort by:</b></label>
+      <button class="sort-btn active" data-sort="severity" onclick="sortFixes('severity')">Severity</button>
+      <button class="sort-btn" data-sort="category" onclick="sortFixes('category')">Category</button>
+      <button class="sort-btn" data-sort="ease" onclick="sortFixes('ease')">Implementation Ease</button>
+    </div>
+    <div class="control-group">
+      <button onclick="copyTopFixes()">Copy Visible Remediation Commands</button>
+    </div>
+  </div>
+  <div class="small" id="visible-count" style="margin:8px 0;color:#666"></div>
+  <div id="top-fixes-container">
   {{range .TopFixes}}
-    <div style="margin-bottom:8px">
-      <b>{{.Title}}</b> <span class="badge {{.Status}}">{{.Status}}</span>
+    <div class="fix-item" data-category="{{.Category}}" data-severity="{{.Severity}}" data-title="{{.Title}}" data-ease="{{if eq .Category "Services"}}low{{else if eq .Category "Auth"}}medium{{else if eq .Category "FS_Perms"}}low{{else}}medium{{end}}">
+      <b>{{.Title}}</b> <span class="badge {{.Status}}">{{.Status}}</span><span class="category-badge cat-{{.Category}}">{{.Category}}</span>
       <div class="small">Observed: <code>{{.Observed}}</code> → Expected: <code>{{.Expected}}</code></div>
-      <div class="small">Remediation: {{.Remediation}}</div>
+      <div class="small fix-remediation">Remediation: {{.Remediation}}</div>
       {{if .Evidence}}
         <div class="small"><details><summary>Evidence</summary><pre>{{.Evidence}}</pre></details></div>
       {{end}}
     </div>
   {{end}}
+  </div>
 </div>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    updateVisibleCount();
+    updateSortButtons('severity');
+  });
+</script>
 {{end}}
 
 <div class="card">
@@ -156,8 +275,10 @@ func Write(
 		}
 		return fail[i].ID < fail[j].ID
 	})
-	if len(fail) > 5 {
-		fail = fail[:5]
+	// Show more fixes to make filtering/sorting more useful
+	maxFixes := 10
+	if len(fail) > maxFixes {
+		fail = fail[:maxFixes]
 	}
 
 	vm := ViewModel{
