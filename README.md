@@ -1,174 +1,185 @@
-Overview
+# RedCheck — Dual-Use Security Posture Scanner for RHEL-based Systems
 
-In today’s cybersecurity landscape, Red Hat Enterprise Linux (RHEL) and its downstream distributions (such as Rocky Linux) are widely deployed across enterprise, cloud, and government infrastructures due to their stability and strong vendor support. However, despite their robustness, these systems often suffer from overlooked misconfigurations, weak authentication policies, improper service settings, and outdated security controls. These issues frequently go unnoticed, especially in environments where administrators lack a lightweight, consistent, and fast method of evaluating system hardening.
+RedCheck is a high-speed, dual-use security posture scanner for **Red Hat Enterprise Linux (RHEL)** and downstream distributions such as **Rocky Linux**. It helps:
 
-While the Windows ecosystem benefits from mature tools like PingCastle for Active Directory security health checks, the Linux ecosystem lacks an equivalent streamlined tool for server posture assessment. Existing scanners such as OpenSCAP or Lynis are powerful but either too compliance-heavy, too broad, or too time-consuming for fast-paced operational or red team scenarios. As a result, system administrators and penetration testers often rely on manual checklists, which are error-prone, inconsistent, and rarely aligned with industry-recognized benchmarks such as the CIS (Center for Internet Security) Rocky Linux Benchmarks.
+- **System administrators / blue teams** validate hardening against a curated subset of **CIS Benchmark controls**
+- **Penetration testers / red teams** quickly identify common **local misconfigurations & privilege-escalation signals**
 
-RedCheck directly addresses this gap.
+It generates a **severity-weighted security score**, category breakdowns, and actionable remediation guidance in:
+**terminal**, **JSON**, and **HTML**.
 
-RedCheck is a dual-use, high-speed command-line tool designed for auditing the security posture of RHEL-based systems. It evaluates a system against a curated subset of CIS Benchmark v10 controls and common privilege-escalation weaknesses. The tool produces a weighted security score, category-by-category breakdowns, and actionable remediation guidance—available in terminal output, JSON, and HTML formats. Its lightweight design makes it suitable for both defensive and offensive workflows.
+> ✅ **Read-only by default**  
+> ⚠️ **Root recommended** (required for many checks: mounts, audit, privileged paths, system config)
 
-Installation
-1. Clone the repository
+---
+
+## Why RedCheck?
+
+RHEL is widely deployed across enterprise and government environments due to stability and vendor support, yet security misconfigurations still occur in real systems (weak authentication policies, insecure services, permissive file permissions, and privilege escalation paths).
+
+Existing tools are powerful but fragmented:
+
+- Compliance-heavy auditing (e.g., OpenSCAP / Lynis)
+- Offensive post-exploitation enumeration (e.g., linPEAS)
+- Manual checklists (error-prone and inconsistent)
+
+RedCheck bridges this gap with a single lightweight CLI that supports both **defensive** and **attacker-view** posture assessment.
+
+---
+
+## Quick Start
+
+### Build from source
+
+```bash
 git clone https://github.com/Shunsuiky0raku/redcheck.git
 cd redcheck
-
-2. Build the binary
 go build -o redcheck .
 
-3. Run the tool (root recommended)
+
+```
+## Run a full scan
+```
 sudo ./redcheck scan --all
-
-
-RedCheck requires elevated permissions to inspect system configuration, mount options, audit settings, and privileged files.
-
-🧪 Usage Examples
-Run all checks (default)
-sudo ./redcheck scan --all
-
-Run only CIS Benchmark checks
+```
+## Run CIS checks only:
+```
 sudo ./redcheck scan --cis
+```
 
-Run only recon / privilege-escalation checks
+## Run privilege escalation / recon checks only:
+```
 sudo ./redcheck scan --pe
+```
 
-Export JSON report
+## Export JSON report:
+```
 sudo ./redcheck scan --all --json out.json
+```
 
-Generate HTML report
+## Generate HTML report:
+```
 sudo ./redcheck scan --all --html out.html
+```
 
-Enable verbose evidence output
+## Enable verbose evidence output:
+```
 sudo ./redcheck scan --all -v
+```
 
-Load extra custom YAML rules
+## Load extra custom YAML rules:
+```
 sudo ./redcheck scan --rules ./rules
+```
 
-Generate remediation script
+## Generate a remediation script (review before running):
+```
 sudo ./redcheck scan --all --emit-fix fix.sh
+```
 
-Enable shell auto-completion
-./redcheck completion bash    # or zsh, fish, powershell
+## Enable shell auto-completion:
+```
+./redcheck completion bash   # or zsh, fish, powershell
+```
+## Features
+1) High-Speed Modular Scanning Engine
 
-⚡ Full Feature List
-✅ 1. High-Speed Modular Scanning Engine
+- Parses and evaluates CIS-aligned rules
 
-Parses and evaluates CIS-aligned rules
+- Supports internal and external YAML rule definitions
 
-Supports internal and external YAML rule definitions
+- Uses parallel execution (worker pool) for fast scanning
 
-Uses parallel execution (worker pool) for fast scanning
+- Runs on Rocky Linux / RHEL / CentOS (RHEL-based systems)
 
-Runs cleanly on Rocky Linux / RHEL / CentOS
+2) Severity-Weighted Scoring System
 
-✅ 2. Severity-Weighted Scoring System
+- Assigns checks a severity weight (Critical/High/Medium/Low)
 
-Assigns all checks a severity weight (Critical/High/Medium/Low)
+- Computes category-by-category scores
 
-Computes category-by-category scores
+- Produces a global security score weighted by category importance
 
-Produces a global security score weighted by category importance
+- Optional penalties for inaccessible or misconfigured system files
 
-Includes error penalties for inaccessible or misconfigured system files
+3) Red-Team Reconnaissance Mode
+Attacker-centric checks such as:
 
-✅ 3. Red-Team Reconnaissance Mode
+- Sudo misconfigurations
 
-Provides attacker-centric checks such as:
+- Writable or insecure mount options
 
-Sudo misconfigurations
+- SSH misconfigurations
 
-Writable or insecure mount options
+- Accounts with UID 0
 
-SSH misconfigurations
+- Missing audit controls
 
-Accounts with UID 0
+- Potential privilege escalation paths
 
-Missing audit controls
+A lightweight alternative to post-exploitation enumeration scripts (e.g., linPEAS), with more curated results.
 
-Potential privilege escalation paths
+4) Multi-Format Reporting
 
-This mode gives penetration testers a lightweight alternative to tools like linPEAS.
+- Terminal output (top findings + remediation)
 
-✅ 4. Multi-Format Reporting
+- JSON report for automation pipelines
 
-Terminal output (with top findings and remediation)
+- HTML report with styling, progress bars, and detailed results
 
-JSON report for machine-readable pipelines
+- Optional evidence (-v) and optional fix script generation
 
-HTML report with styling, progress bars, and detailed results
+5) Extensible Rule Framework
 
-Optional evidence (-v) and optional fix script generation
+Add custom .yaml rules to check for:
 
-✅ 5. Extensible Rule Framework
+- Organization-specific hardening policies
 
-Users can add custom .yaml rules to check for:
+- Additional privilege escalation checks
 
-Organization-specific hardening policies
+- Compliance controls not included by default
 
-Additional privilege escalation checks
+6) Clean CLI Experience
 
-Compliance controls not included by default
+- Organized grouping of results
 
-✅ 6. Clean User Interface
+- “Top fixes” highlighted for quick action
 
-ASCII art banner
+## Scoring Model
 
-Real-time progress bar
+RedCheck uses a hybrid scoring model inspired by CIS structure and risk-based weighting.
 
-Organized grouping of results
-
-Top 5 fixes highlighted for quick action
-
-📊 Theory Behind the Scoring System
-
-RedCheck uses a hybrid scoring model inspired by:
-
-CIS Benchmark structure & severity levels
-
-NIST SP 800-30 risk scoring principles
-
-NIST 800-53 control impact weighting
-
-Your scoring approach consists of three core components:
-
-1️⃣ Severity Weighting (Rule-Level)
-
-Each rule has a severity:
-
+1) Severity Weighting (Rule-level)
 Severity	Weight
 Critical	4
 High	3
 Medium	2
 Low	1
 
-A failed High-severity rule reduces the score more than a Low-severity rule.
+A failed high-severity rule impacts the score more than a low-severity rule.
 
-This ensures the score reflects risk, not just the number of failed checks.
+2) Category Weighting (Domain-level)
 
-2️⃣ Category Weighting (Domain-Level)
-"Privileges": 30,
-"Services":   20,
-"Auth":       20,
-"FS_Perms":   15,
-"Audit":      10,
-"Recon":       5,
+Example category weights:
+
+Privileges: 30
+
+Services: 20
+
+Auth: 20
+
+FS_Perms: 15
+
+Audit: 10
+
+Recon: 5
 
 
-This is based on security prioritization similar to NIST & CIS:
-
-Privilege escalation risks matter MOST
-
-Services & Auth are critical to attack surface
-
-Filesystem permissions, audit controls matter moderately
-
-Recon findings least weighted for global posture
-
-3️⃣ Weighted Category Score Formula
+3) Category Score Formula
 
 For each category:
 
-score = 100 – (failed_weight / total_weight) × 100
+score = 100 - (failed_weight / total_weight) * 100
 
 
 Example:
@@ -176,20 +187,19 @@ Example:
 Max severity points = 20
 
 Failed severity points = 10
+→ Category score = 50%
 
-→ Score = 50%
-
-4️⃣ Global Score Calculation
+4) Global Score
 
 Global score is a weighted sum:
 
-global = Σ( category_score × category_weight ) / 100
+global = Σ(category_score * category_weight) / 100
 
 
-This model ensures:
+## Safety & Ethics
 
-A strong score requires good performance across all categories
+Read-only by default
 
-A severe failure in Privileges or Auth significantly impacts the score
+No exploitation, persistence, or weaponization features
 
-Minor failures do not distort the global posture
+Use only on systems you own or have explicit authorization to assess
